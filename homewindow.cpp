@@ -1,0 +1,29 @@
+#include "homewindow.h"
+#include <QApplication>
+
+HomeWindow::HomeWindow(QWidget *parent) : QWidget(parent)
+{
+    layout = new QGridLayout(this);
+    tempDial = new QDial(this);
+    desiredTemp = new QLCDNumber(this);
+    exitButton = new QPushButton("Exit", this);
+    sensorsButton = new QPushButton("Sensors Status", this);
+    layout->addWidget(desiredTemp,0,1);
+    layout->addWidget(tempDial,1,1);
+    layout->addWidget(exitButton,0,2);
+    layout->addWidget(sensorsButton,0,0);
+    this->setLayout(layout);
+    QObject::connect(tempDial, SIGNAL(valueChanged(int)), desiredTemp, SLOT(display(int)));
+}
+
+int HomeWindow::sensorsButtonPressed(){
+    return 3;
+}
+
+HomeWindow::~HomeWindow()
+{
+    delete layout;
+    delete tempDial;
+    delete desiredTemp;
+    delete exitButton;
+}

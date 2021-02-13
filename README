@@ -1,0 +1,12 @@
+GUI application for COMFORT Control project
+
+PreReq
+  sudo apt-get update
+  sudo apt-get upgrade
+  sudo apt-get build-essential
+  sudo apt-get install qt5-default
+
+Compile and Run
+  qmake
+  make
+  ./gui
