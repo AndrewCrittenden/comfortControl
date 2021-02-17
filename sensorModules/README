@@ -1,0 +1,3 @@
+This folder is for the arduino codes for th 5 sensor modules and wifi transfering codes
+
+The sensors will send their data and then the centralized interface will do a logical check to see if the sensor data received is valid.
