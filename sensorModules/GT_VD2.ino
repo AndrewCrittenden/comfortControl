@@ -35,6 +35,8 @@ void loop() {
   Serial.print("volts: ");
   Serial.println(voltage);
   double rt = (1844 * voltage) / (3.2 - voltage) + 21.9; //measured values of the resistance and voltage supplied instead of nominal
+                                                          // includes the +21.9 as a shift for the rt to gt formula. The measured resistance at
+                                                          //68 degrees is 21.9 different on this particular gt sensor than in the manual
   Serial.print("GT res: ");
   Serial.println(rt);
   double gt = 0.2585 * rt - 258.6; // given in manual 
