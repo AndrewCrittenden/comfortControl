@@ -1,0 +1,6 @@
+This code runs in python 3.7 with the pythermalcomfort library. 
+
+It is set up to run with fake data for testing until real data can be received
+on the pi. 
+
+Could be used to test pipe communication between the gui and the c++ code. 
