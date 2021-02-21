@@ -9,9 +9,9 @@
 
 // 1) Uncomment the type of node you are using
 //#define TEMP_SENSOR
-//#define TEST_SENSOR
+#define TEST_SENSOR
 //#define GLOBE_SENSOR
-#define REL_HUMIDITY
+//#define REL_HUMIDITY
 
 /*
 #define SPIWIFI       SPI  // The SPI port
@@ -86,7 +86,7 @@ void setupCOMFORT() {
 }
 
 // number of seconds between each running of this function
-#define LOOP_TIMER 0
+#define LOOP_TIMER 3
 
 // optional function which should run regularly
 // must set LOOP_TIMER for time of which this function should run again
@@ -99,13 +99,13 @@ int onTimerLoop() {
  // Populate struct members here
 responseData onDataRequest() {
   responseData data;
-  
+    
    //data.test_x = (double)RTC->MODE2.CLOCK.bit.SECOND*1.0;
   return data;
 }
 
 // Function that runs after the data is pos edge (good for "runs once per data send" functions)
-void onDataPosEdge() {
+void onDataEdge() {
 
 }
 
@@ -184,25 +184,26 @@ void setup() {
 }
 
 void loop() {
-    int timerDelay = 0;
-    int lastRunTime = 0;
-    onDataPosEdge();
-    while(!(dataRequestReceived(Tcp)) {
-      #if (DEBUG == 1)
-        Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
-        Serial.print("/");
-        Serial.print(RTC->MODE2.CLOCK.bit.DAY);
-        Serial.print("/");
-        Serial.print(RTC->MODE2.CLOCK.bit.YEAR+2016);
-        Serial.print(" ");
-        Serial.print(RTC->MODE2.CLOCK.bit.HOUR);
-        Serial.print(":");
-        Serial.print(RTC->MODE2.CLOCK.bit.MINUTE);
-        Serial.print(":");
-        Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
-      #endif
-      if ((int)RTC->MODE2.CLOCK.reg - lastRunTime > timerDelay) {
-        onTimerLoop();
+    unsigned long timerDelay = 0;
+    unsigned long lastRunTime = 0;
+    onDataEdge();
+    while(!(dataRequestReceived(Tcp))) {
+      if ((millis() - lastRunTime) >= timerDelay*1000) {
+        #if (DEBUG == 1)
+          Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
+          Serial.print("/");
+          Serial.print(RTC->MODE2.CLOCK.bit.DAY);
+          Serial.print("/");
+          Serial.print(RTC->MODE2.CLOCK.bit.YEAR+2016);
+          Serial.print(" ");
+          Serial.print(RTC->MODE2.CLOCK.bit.HOUR);
+          Serial.print(":");
+          Serial.print(RTC->MODE2.CLOCK.bit.MINUTE);
+          Serial.print(":");
+          Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
+        #endif
+        timerDelay = onTimerLoop();
+        lastRunTime = millis();
       }
     }
 }
@@ -587,6 +588,17 @@ void authenticate() {
   Udp.write(returnTransmission,sizeof(returnTransmission));
   Udp.endPacket();
 
+  while (!packetReceived) {
+    if ((authSize = Udp.parsePacket()) != 0) {
+      serverIP = Udp.remoteIP();
+      Udp.read(packetBuffer, authSize);
+      packetReceived = true;
+    }
+    delay(500);
+    Serial.print("Waiting for TCP_GO: ");
+    Serial.println(WiFi.localIP());
+  }
+
   bool connected = false;
   // Create TCP Thing
   while(connected == false) {
@@ -659,7 +671,7 @@ bool dataRequestReceived(WiFiClient cl) {
   *((uint32_t *)&toSendBuff[sizeof(dataResponse)-1+sizeof(toSend)]) = counter;
   *((uint32_t *)&toSendBuff[sizeof(dataResponse)-1+sizeof(toSend)+sizeof(counter)]) = RTC->MODE2.CLOCK.reg;
   if (!cl.connected()) {
-    Serial.println("Fuck my ass.");
+    Serial.println("Not connected.");
   }
   cl.write(toSendBuff,sizeof(toSendBuff));
   Serial.println("Bitches.");
