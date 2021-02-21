@@ -7,70 +7,121 @@
 #include <Crypto.h>
 #include <SHA256.h>
 
-#define HASH_SIZE 32
-#define BLOCK_SIZE 64
-#define DEBUG 0
-#define SERIAL_NUMBER ((uint8_t *)0x008061FC)
+// 1) Uncomment the type of node you are using
+//#define TEMP_SENSOR
+//#define TEST_SENSOR
+//#define GLOBE_SENSOR
+#define REL_HUMIDITY
+
+/*
+#define SPIWIFI       SPI  // The SPI port
+#define SPIWIFI_SS    13   // Chip select pin
+#define ESP32_RESETN  12   // Reset pin
+#define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
+#define ESP32_GPIO0   -1*/
 
 
+// 2) Define your pins for the WiFi Module (See comments on each define)
 #define SPIWIFI       SPI  // The SPI port
 #define SPIWIFI_SS    9   // Chip select pin
 #define ESP32_RESETN  5   // Reset pin
 #define SPIWIFI_ACK   7   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1
+#define ESP32_GPIO0   -1 
 
-/*
-#define SPIWIFI       SPI  // The SPI port
-#define SPIWIFI_SS    13   // Chip select pin
-#define ESP32_RESETN  12   // Reset pin
-#define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1
-*/
+// 3) Change DEBUG to 0 when using without SERIAL printouts (i.e. in normal use)
+#define DEBUG 1
+
+// 4) Ensure DEVICE_TYPE String is set to be the DEFINED name of your sensor (Caps sensitive, make sure it matches perfectly)
+// Capped at 16 bytes, the rest will get cut off in runtime if you go over
+#ifdef REL_HUMIDITY
+  #define DEVICE_TYPE "Rel. Humidity"
+#endif
+
+#ifdef TEST_SENSOR
+  #define DEVICE_TYPE "Test"
+#endif
+
+#ifdef GLOBE_SENSOR
+  #define DEVICE_TYPE "Globe"
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Structs to populate
+
+// 5) Ensure the data being sent is correct for your type of sensor
+
+#ifdef TEMP_SENSOR
+  // Definition of temperatureData
+  struct responseData {
+    double temp;
+  };
+#endif
+
+#ifdef TEST_SENSOR
+  // Definition of temperatureData
+  struct responseData {
+    double test_x;
+  };
+#endif
+
+#ifdef GLOBE_SENSOR
+  // Definition of temperatureData
+  struct responseData {
+    double globeReading;
+  };
+#endif
+
+#ifdef REL_HUMIDITY
+  struct responseData {
+    double humidity;
+  };
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// YOUR CODE HERE
+
+// place code here that you would like to run when the node turns on
+void setupCOMFORT() {
+  
+}
+
+// number of seconds between each running of this function
+#define LOOP_TIMER 0
+
+// optional function which should run regularly
+// must set LOOP_TIMER for time of which this function should run again
+int onTimerLoop() {
+  
+  return LOOP_TIMER;
+}
+
+ // must return a responseData containing the data to send to the server
+ // Populate struct members here
+responseData onDataRequest() {
+  responseData data;
+  
+   //data.test_x = (double)RTC->MODE2.CLOCK.bit.SECOND*1.0;
+  return data;
+}
+
+// Function that runs after the data is pos edge (good for "runs once per data send" functions)
+void onDataPosEdge() {
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define HASH_SIZE 32
+#define BLOCK_SIZE 64
+#define SERIAL_NUMBER ((uint8_t *)0x008061FC)
+
+#include "arduino_secrets.h"
+
+
 
 #define PRREG(x) Serial.print(#x" 0x"); Serial.println(x,HEX)
-/*
-// Configure the pins used for the ESP32 connection
-#if defined(ADAFRUIT_FEATHER_M4_EXPRESS) || \
-  defined(ADAFRUIT_FEATHER_M0_EXPRESS) || \
-  defined(ARDUINO_AVR_FEATHER32U4) || \
-  defined(ARDUINO_NRF52840_FEATHER) || \
-  defined(ADAFRUIT_ITSYBITSY_M0) || \
-  defined(ADAFRUIT_ITSYBITSY_M4_EXPRESS) || \
-  defined(ARDUINO_AVR_ITSYBITSY32U4_3V) || \
-  defined(ARDUINO_NRF52_ITSYBITSY)
-// Configure the pins used for the ESP32 connection
-#define SPIWIFI       SPI  // The SPI port
-#define SPIWIFI_SS    13   // Chip select pin
-#define ESP32_RESETN  12   // Reset pin
-#define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1
-#elif defined(ARDUINO_AVR_FEATHER328P)
-#define SPIWIFI       SPI  // The SPI port
-#define SPIWIFI_SS     4   // Chip select pin
-#define ESP32_RESETN   3   // Reset pin
-#define SPIWIFI_ACK    2   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1
-#elif defined(TEENSYDUINO)
-#define SPIWIFI       SPI  // The SPI port
-#define SPIWIFI_SS     5   // Chip select pin
-#define ESP32_RESETN   6   // Reset pin
-#define SPIWIFI_ACK    9   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1
-#elif defined(ARDUINO_NRF52832_FEATHER)
-#define SPIWIFI       SPI  // The SPI port
-#define SPIWIFI_SS    16   // Chip select pin
-#define ESP32_RESETN  15   // Reset pin
-#define SPIWIFI_ACK    7   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1
-#elif !defined(SPIWIFI_SS)   // if the wifi definition isnt in the board variant
-// Don't change the names of these #define's! they match the variant ones
-#define SPIWIFI       SPI
-#define SPIWIFI_SS    10   // Chip select pin
-#define SPIWIFI_ACK    7   // a.k.a BUSY or READY pin
-#define ESP32_RESETN   5   // Reset pin
-#define ESP32_GPIO0   -1   // Not connected
-#endif
-*/
+
+
 #define UL unsigned long
 #define znew  ((z=36969*(z&65535)+(z>>16))<<16)
 #define wnew  ((w=18000*(w&65535)+(w>>16))&65535)
@@ -81,18 +132,20 @@
 
 #define trand (TRNG->DATA.reg)
 
-#include "arduino_secrets.h"
 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
 const byte UniqueIdentifier[] = "COMFORTController V0.1";
+const byte dataRequest[] = "DataRequest:";
+const byte dataResponse[] = "Response:";
 const int PACKET_SIZE = 128;
 const int AUTH_EXACT_SIZE = 118;
 const int PUBKEY_SIZE = 64;
 const int RETURN_PACKET_SIZE = 0;
 uint32_t seed;
 uint32_t counter;
+responseData data;
 
 int keyIndex = 0;            // your network key Index number (needed only for WEP)
 unsigned int localPort = 20000;
@@ -119,24 +172,50 @@ static UL z = 362436069 * (int)timeValue, w = 521288629 * (int)timeValue, \
 byte deviceID[8];
 byte sensorType[16];
 
+WiFiClient Tcp;
 WiFiUDP Udp;
 SHA256 hash;
 
 void setup() {
-  char Stringy[] = "Temperature";
+  char Stringy[] = DEVICE_TYPE;
   comfortWiFiSetup(Stringy, sizeof(Stringy)-1);
-}
-
-void loop() {
+  setupCOMFORT();
   authenticate();
 }
 
+void loop() {
+    int timerDelay = 0;
+    int lastRunTime = 0;
+    onDataPosEdge();
+    while(!(dataRequestReceived(Tcp)) {
+      #if (DEBUG == 1)
+        Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
+        Serial.print("/");
+        Serial.print(RTC->MODE2.CLOCK.bit.DAY);
+        Serial.print("/");
+        Serial.print(RTC->MODE2.CLOCK.bit.YEAR+2016);
+        Serial.print(" ");
+        Serial.print(RTC->MODE2.CLOCK.bit.HOUR);
+        Serial.print(":");
+        Serial.print(RTC->MODE2.CLOCK.bit.MINUTE);
+        Serial.print(":");
+        Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
+      #endif
+      if ((int)RTC->MODE2.CLOCK.reg - lastRunTime > timerDelay) {
+        onTimerLoop();
+      }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void getSerialNumber(uint8_t * dest, size_t getLength) {
   if (getLength > 16) { return; }
   for (int i = 0; i < getLength; i++) {
     dest[i] = 3;
   }
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void init_TRNG() {
   MCLK->APBCMASK.reg |= MCLK_APBCMASK_TRNG;
@@ -148,6 +227,8 @@ void init_TRNG() {
   
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int getTRNGValue() {
   if (seed != trand) {
     srand(trand);
@@ -155,6 +236,8 @@ int getTRNGValue() {
   }
   return rand();
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // DO NOT RECOMMEND USING THIS ONE, PLEASE SPECIFY YOUR DEVICEID!!!
 void comfortWiFiSetup(const char * inputType, size_t sensorTypeLength) {
@@ -167,29 +250,53 @@ void comfortWiFiSetup(const char * D_ID, const char * inputType, size_t sensorTy
   memcpy(deviceID, D_ID, sizeof(deviceID));
   memset(sensorType,0,sizeof(sensorType));
   memcpy(sensorType,inputType,sensorTypeLength);
-
-  uint32_t * privateKeyInitializer = (uint32_t *)privateKey;
-  for (int i = 0; i < 8; i++) {
-    privateKeyInitializer[i] = getTRNGValue();
-  }
-
   // If not serial.
   if (!Serial) {
     Serial.begin(9600);
   }
 
-  #if (DEBUG == 1)
+  #if (DEBUG)
     while (!Serial) {}
     Serial.println();
   #endif
-  
+
+   clkInit();
   for(int i = 0; i < 8; i++) {
     Serial.print((char)deviceID[i]);
     Serial.print(" ");
   }
   Serial.println("");
-  
+  uint32_t t = 0;
+ // t = RTC->MODE2.CLOCK.reg;
   init_TRNG();
+  delay(2000);
+  
+  /*while(true) {
+    
+    //uint8_t month;
+    //static uint32_t prev = 0;
+    
+    Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
+    Serial.print("/");
+    Serial.print(RTC->MODE2.CLOCK.bit.DAY);
+    Serial.print("/");
+    Serial.print(RTC->MODE2.CLOCK.bit.YEAR+2016);
+    Serial.print(" ");
+    Serial.print(RTC->MODE2.CLOCK.bit.HOUR);
+    Serial.print(":");
+    Serial.print(RTC->MODE2.CLOCK.bit.MINUTE);
+    Serial.print(":");
+    Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
+    //prev = t;
+    delay(1000);
+    
+  } */
+  
+  uint32_t * privateKeyInitializer = (uint32_t *)privateKey;
+  for (int i = 0; i < 8; i++) {
+    privateKeyInitializer[i] = getTRNGValue();
+  }
+  
   // Make uECC key
   uECC_set_rng(&getRNGValues);
   uECC_compute_public_key(privateKey, nodePubKey, uECC_secp256r1());
@@ -229,7 +336,7 @@ void comfortWiFiSetup(const char * D_ID, const char * inputType, size_t sensorTy
     Serial.println(ssid);
 
     status = WiFi.begin(ssid, pass);
-
+    printStatus(status);
     delay(500);
   }
 
@@ -240,12 +347,67 @@ void comfortWiFiSetup(const char * D_ID, const char * inputType, size_t sensorTy
   Udp.begin(localPort);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void updateRTC(byte year, byte month, byte day, byte hour, byte minute, byte second) {
+  uint32_t t;
+  t |= (year << 26) | (month << 22) | (day << 17) | (hour << 12) | (minute << 6) | (second);
+  RTC->MODE2.CLOCK.reg = t;
+  while(RTC->MODE2.SYNCBUSY.bit.CLOCK);
+  delay(100);
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void hashFunc(Hash *hash, const uint8_t * data, uint8_t *hashOut, size_t dataSize) {
   hash->reset();
   hash->update(data,dataSize);
   hash->finalize(hashOut,HASH_SIZE);
   // Hopefully this works
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void printStatus(int status) {
+  switch(status) {
+      case WL_NO_SHIELD:
+        Serial.print(status);
+        Serial.println(": No WiFi device present");
+        break;
+      case WL_NO_SSID_AVAIL:
+        Serial.print(status);
+        Serial.println(": No SSID Available");
+      break;
+      case WL_CONNECT_FAILED:
+        Serial.print(status);
+        Serial.println(": Connection failed for all attempts");
+      break;
+      case WL_DISCONNECTED:
+        Serial.print(status);
+        Serial.println(": Disconnected from Network");
+      break;
+      case WL_CONNECTION_LOST:
+        Serial.print(status);
+        Serial.println(": Connection Lost");
+      break;
+      case WL_IDLE_STATUS:
+        Serial.print(status);
+        Serial.println(": Idle Status...");
+      break;
+      case WL_AP_FAILED:
+        Serial.print(status);
+        Serial.println(": AP Failed");
+      break;
+      case WL_AP_CONNECTED:
+        Serial.print(status);
+        Serial.println(": AP Connected");
+      break;
+      default:
+        Serial.print(status);
+        Serial.println(": Unknown");
+       break;
+    }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void makeDeviceID(char * dest) {
   char newID[8];
@@ -266,6 +428,8 @@ void makeDeviceID(char * dest) {
   Serial.print("\n-------\n");
   return;
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void authenticate() {
   int authSize;
@@ -418,19 +582,116 @@ void authenticate() {
     Serial.print(" ");
     Serial.print(plaintextIn[i],HEX);
   }
-
+  Serial.println();
   Udp.beginPacket(serverIP,outwardPort);
   Udp.write(returnTransmission,sizeof(returnTransmission));
   Udp.endPacket();
-  while(true);
-  return;
-  //
+
+  bool connected = false;
+  // Create TCP Thing
+  while(connected == false) {
+    connected = Tcp.connect(serverIP,20003);
+    Serial.println("Let me in");
+    delay(300);
+  }
+  
+  byte cipher[16];
+  byte a[16];
+    while(!Tcp.available()) {}
+      for (int i = 0; i < sizeof(cipher); i++) {
+        cipher[i] = Tcp.read();
+      }
+  //Tcp.stop();
+  AES_Decrypt(cipher,a,sizeof(cipher));
+  updateRTC(a[2],a[1],a[0],a[3],a[4],a[5]);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool dataRequestReceived(WiFiClient cl) {
+  byte buffer[128];
+  int bytesReceived = cl.available() & 127;
+  // If the dataRequest was not received
+  if (!(bytesReceived)) {
+    return false;
+  }
+  // Verify that the ping is correct:
+  // Ping should contain the following: Encrypted(UniqueIdentifier + "dataRequest" + counter)
+  for(int i = 0; i < bytesReceived; i++) {
+    buffer[i] = (byte)cl.read();
+  }
+  Serial.print("before decrypt: ");
+  for (int i = 0; i < bytesReceived; i++) {
+          Serial.print(buffer[i],HEX);
+          Serial.print(" ");
+         }
+         Serial.println();
+         Serial.print("Shared Key: ");
+         for (int i = 0; i < sizeof(sharedKey); i++) {
+          Serial.print(sharedKey[i],HEX);
+          Serial.print(" ");
+         }
+         Serial.println();
+         Serial.print("IV: ");
+         for (int i = 0; i < sizeof(IV); i++) {
+          Serial.print(IV[i],HEX);
+          Serial.print(" ");
+         }
+         Serial.println();
+  int pingSize = AES_Decrypt((uint8_t *)buffer, (uint8_t *)buffer, bytesReceived);
+
+  if (memcmp(UniqueIdentifier,buffer,sizeof(UniqueIdentifier)-1) ||
+     memcmp(dataRequest,&buffer[sizeof(UniqueIdentifier)-1],sizeof(dataRequest)-1) ||
+      (*((uint32_t *)&buffer[sizeof(UniqueIdentifier)+sizeof(dataRequest)-2]) != counter)) {
+         Serial.println("Invalid dataRequest ping.");
+         Serial.println();
+         Serial.print("Counter: ");
+         Serial.println(counter);
+         Serial.print("Received Counter: ");
+         Serial.println(*((uint32_t *)&buffer[sizeof(UniqueIdentifier)+sizeof(dataRequest)-2]));
+         return false;
+  }
+  
+  // Assumed that dataRequest was found:
+  responseData toSend = onDataRequest();
+  byte toSendBuff[sizeof(dataResponse)+sizeof(toSend)-1+sizeof(counter)+4];
+  memcpy(toSendBuff,dataResponse,sizeof(dataResponse)-1); // "DataResponse:"
+  memcpy(&toSendBuff[sizeof(dataResponse)-1],&toSend,sizeof(toSend));
+  *((uint32_t *)&toSendBuff[sizeof(dataResponse)-1+sizeof(toSend)]) = counter;
+  *((uint32_t *)&toSendBuff[sizeof(dataResponse)-1+sizeof(toSend)+sizeof(counter)]) = RTC->MODE2.CLOCK.reg;
+  if (!cl.connected()) {
+    Serial.println("Fuck my ass.");
+  }
+  cl.write(toSendBuff,sizeof(toSendBuff));
+  Serial.println("Bitches.");
+  counter++;
+  return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void clkInit() {
+  delay(1000);
+  MCLK->APBAMASK.reg |= MCLK_APBAMASK_RTC;
+  OSC32KCTRL->RTCCTRL.reg = 0;  // 5 32khz crystal  1 ulp oscillator
+  RTC->MODE2.CTRLA.reg &= ~RTC_MODE2_CTRLA_ENABLE;  // disable
+  while (RTC->MODE2.SYNCBUSY.bit.ENABLE); // sync
+  RTC->MODE2.CTRLA.reg |= RTC_MODE2_CTRLA_SWRST; // software reset
+  while (RTC->MODE2.SYNCBUSY.bit.SWRST); // sync
+  
+  RTC->MODE2.CTRLA.reg |= RTC_MODE2_CTRLA_MODE(0x2);
+  RTC->MODE2.CTRLA.reg &= ~RTC_MODE2_CTRLA_CLKREP;
+  RTC->MODE2.CTRLA.reg |=  RTC_MODE2_CTRLA_CLOCKSYNC | RTC_MODE2_CTRLA_PRESCALER(0xB)
+                           | RTC_MODE2_CTRLA_ENABLE; // enable
+  while (RTC->MODE2.SYNCBUSY.bit.ENABLE); // sync
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void aes_init(uint8_t * AESKey, size_t AESKeySize) {
   MCLK->APBCMASK.reg |= MCLK_APBCMASK_AES;
   set_aes_key(AESKey, AESKeySize);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int set_aes_key(const uint8_t *key, size_t keySize) {
   if (keySize != 32) {
@@ -448,6 +709,7 @@ int getRNGValues(uint8_t * dest, unsigned size) {
   return 1;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Returns length of cipherout
 uint32_t AES_Encrypt(const uint8_t* plaintext, uint8_t * cipherout, size_t sizeT) {
   //byte buffer[1024];
@@ -467,17 +729,31 @@ uint32_t AES_Encrypt(const uint8_t* plaintext, uint8_t * cipherout, size_t sizeT
   return sizeT + paddingSize;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Returns length of cipherout
+uint32_t AES_Decrypt(const uint8_t* ciphertext, uint8_t * output, size_t size) {
+  //byte buffer[1024];
+  //memset(buffer,0,sizeT+16);
+  //memcpy(cipherout, plaintext, sizeT);
+  if (size & 15 || size == 0) {
+    Serial.println("Invalid Ciphertext Size!");
+    return 0;
+  }
+  aes_cbc_decrypt_256b(ciphertext, output, size, IV);
+  return size - (output[size-1]);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void aes_cbc_encrypt_256b(const uint8_t *plaintext, uint8_t *ciphertext, size_t sizeT, const uint8_t iv[16]) {
   int i;
   // Steps found in SAMD51 manual: https://ww1.microchip.com/downloads/en/DeviceDoc/SAM_D5x_E5x_Family_Data_Sheet_DS60001507G.pdf
   // Further assistance provided by:  https://github.com/manitou48/samd51/blob/master/aes.ino
 
   memcpy((uint8_t *)&REG_AES_INTVECTV0, iv, 16);
-
   REG_AES_CTRLA = 0;
   REG_AES_CTRLA = AES_CTRLA_AESMODE_CBC | AES_CTRLA_CIPHER_ENC | AES_CTRLA_ENABLE | AES_CTRLA_KEYSIZE_256BIT;
   REG_AES_CTRLB = AES_CTRLB_NEWMSG;
-
+  
   //PRREG(REG_AES_CTRLA);
 
   uint32_t *wp = (uint32_t *) plaintext;
@@ -500,6 +776,8 @@ void aes_cbc_encrypt_256b(const uint8_t *plaintext, uint8_t *ciphertext, size_t 
   }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void aes_cbc_decrypt_256b(const uint8_t *ciphertext, uint8_t *plaintext, size_t sizeT, const uint8_t iv[16]) {
   int i;
   uint32_t *wp = (uint32_t *) plaintext;
@@ -509,12 +787,13 @@ void aes_cbc_decrypt_256b(const uint8_t *ciphertext, uint8_t *plaintext, size_t 
   // Further assistance provided by:  https://github.com/manitou48/samd51/blob/master/aes.ino
 
   // Ensure size is a multiple of 16
-  if (sizeT % 16) {
+  if (sizeT & 15) {
     Serial.println("Invalid size of plaintext/ciphertext...");
     return;
   }
-
+    
   memcpy((uint8_t *)&REG_AES_INTVECTV0, iv, 16);
+  memcpy((uint8_t *)&REG_AES_KEYWORD0, sharedKey, sizeof(sharedKey));
   REG_AES_CTRLA = 0;
   REG_AES_CTRLA = AES_CTRLA_AESMODE_CBC | AES_CTRLA_CIPHER_DEC | AES_CTRLA_ENABLE | AES_CTRLA_KEYSIZE_256BIT;
   REG_AES_CTRLB |= AES_CTRLB_NEWMSG;
@@ -529,3 +808,4 @@ void aes_cbc_decrypt_256b(const uint8_t *ciphertext, uint8_t *plaintext, size_t 
     word += 4;
   }
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
