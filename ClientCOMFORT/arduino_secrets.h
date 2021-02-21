@@ -1,2 +1,2 @@
-#define SECRET_SSID "GovernmentTrackingDevice"
-#define SECRET_PASS "AllOfYourData"
+#define SECRET_SSID ""
+#define SECRET_PASS ""
