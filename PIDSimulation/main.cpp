@@ -5,9 +5,6 @@
  */
 
 /* 
- * File:   main.cpp
- * Author: Joseph
- *
  * Created on February 20, 2021, 12:19 PM
  */
 
