@@ -96,10 +96,10 @@ inline float timeWeightedAverage(float array[], int length, int start) {
 int main() {
     float length = 3, width = 3, height = 1.5; // units are meters
     const float air_specific_heat = 1210; // in units of J*m^-3*K^-1
-    float controlled_air_volume = length*width*height;
+    float controlled_air_volume = 0.015; // I don't have the actual length/width/height handy right now //length*width*height;
     //float outdoor_temperature = 60; // unit is Celsius
     float indoor_temperature = 18.3333; // unit is Celsius
-    float desired_temperature = 22.2222222222;
+    float desired_temperature = 22.2222222222; // unit is Celsius
     float power_output = 0; // unit is watts
     const float max_cool = -2500;
     const float max_heat = 2500;
@@ -120,7 +120,7 @@ int main() {
     
     struct pid_controller pidctrl;
     int lastrun = 0;
-    progid_t pid = pid_create(&pidctrl, &indoor_temperature, &power_output, &desired_temperature, 1000, 15, 10000);
+    progid_t pid = pid_create(&pidctrl, &indoor_temperature, &power_output, &desired_temperature, 74*controlled_air_volume, 1.1111*controlled_air_volume, 740*controlled_air_volume);
     pid_limits(pid, max_cool, max_heat);
     pid_auto(pid);
     pid_sample(pid, 15000);
