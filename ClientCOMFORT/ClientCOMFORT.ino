@@ -8,10 +8,13 @@
 #include <SHA256.h>
 
 // 1) Uncomment the type of node you are using
-//#define TEMP_SENSOR
 #define TEST_SENSOR
 //#define GLOBE_SENSOR
 //#define REL_HUMIDITY
+//#define OUTPUTNODE
+//#define INDOOR
+//#define OUTDOOR
+//#define OCCUPANCY
 
 /*
 #define SPIWIFI       SPI  // The SPI port
@@ -37,6 +40,22 @@
   #define DEVICE_TYPE "Rel. Humidity"
 #endif
 
+#ifdef INDOOR
+  #define DEVICE_TYPE "Indoor"
+#endif
+
+#ifdef OUTDOOR
+  #define DEVICE_TYPE "Outdoor"
+#endif
+
+#ifdef OCCUPANCY
+  #define DEVICE_TYPE "Occupancy"
+#endif
+
+#ifdef OUTPUTNODE
+  #define DEVICE_TYPE "Output"
+#endif
+
 #ifdef TEST_SENSOR
   #define DEVICE_TYPE "Test"
 #endif
@@ -50,7 +69,7 @@
 
 // 5) Ensure the data being sent is correct for your type of sensor
 
-#ifdef TEMP_SENSOR
+#if defined(INDOOR) || defined(OUTDOOR)
   // Definition of temperatureData
   struct responseData {
     double temp;
@@ -77,6 +96,18 @@
   };
 #endif
 
+#ifdef OCCUPANCY
+  struct responseData {
+    bool isOccupied;
+  };
+#endif
+
+#ifdef OUTPUTNODE
+  struct responseData {
+    double powerOut;
+  };
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // YOUR CODE HERE
 
@@ -86,27 +117,30 @@ void setupCOMFORT() {
 }
 
 // number of seconds between each running of this function
-#define LOOP_TIMER 3
-
-// optional function which should run regularly
+#define LOOP_TIMER 1
 // must set LOOP_TIMER for time of which this function should run again
+// optional function which should run regularly
 int onTimerLoop() {
   
   return LOOP_TIMER;
 }
+responseData onDataSend() {
+  responseData data;
 
+  return data;
+}
  // must return a responseData containing the data to send to the server
  // Populate struct members here
 responseData onDataRequest() {
-  responseData data;
-    
-   //data.test_x = (double)RTC->MODE2.CLOCK.bit.SECOND*1.0;
+    responseData data;
+
+   // Example: data.test_x = (double)RTC->MODE2.CLOCK.bit.SECOND;
   return data;
 }
 
 // Function that runs after the data is pos edge (good for "runs once per data send" functions)
 void onDataEdge() {
-
+  
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -184,13 +218,13 @@ void setup() {
 }
 
 void loop() {
-    unsigned long timerDelay = 0;
-    unsigned long lastRunTime = 0;
+    unsigned int timerDelay = 0;
+    unsigned int lastRunTime = 0;
     onDataEdge();
     while(!(dataRequestReceived(Tcp))) {
-      if ((millis() - lastRunTime) >= timerDelay*1000) {
+      if ((RTC->MODE2.CLOCK.reg - lastRunTime) >= timerDelay*1000) {
         #if (DEBUG == 1)
-          Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
+           Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
           Serial.print("/");
           Serial.print(RTC->MODE2.CLOCK.bit.DAY);
           Serial.print("/");
@@ -203,7 +237,10 @@ void loop() {
           Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
         #endif
         timerDelay = onTimerLoop();
-        lastRunTime = millis();
+        if (timerDelay == 0) {
+          timerDelay++;
+        }
+        lastRunTime = RTC->MODE2.CLOCK.reg;
       }
     }
 }
@@ -240,7 +277,7 @@ int getTRNGValue() {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// DO NOT RECOMMEND USING THIS ONE, PLEASE SPECIFY YOUR DEVICEID!!!
+
 void comfortWiFiSetup(const char * inputType, size_t sensorTypeLength) {
   char newID[8];
   makeDeviceID((char *)newID);
@@ -588,6 +625,7 @@ void authenticate() {
   Udp.write(returnTransmission,sizeof(returnTransmission));
   Udp.endPacket();
 
+  packetReceived = false;
   while (!packetReceived) {
     if ((authSize = Udp.parsePacket()) != 0) {
       serverIP = Udp.remoteIP();
@@ -619,6 +657,9 @@ void authenticate() {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+uint8_t passedMinutes = 0;
+uint8_t lastMinute = 0;
+
 bool dataRequestReceived(WiFiClient cl) {
   byte buffer[128];
   int bytesReceived = cl.available() & 127;
@@ -662,19 +703,56 @@ bool dataRequestReceived(WiFiClient cl) {
          Serial.println(*((uint32_t *)&buffer[sizeof(UniqueIdentifier)+sizeof(dataRequest)-2]));
          return false;
   }
+
+  byte testTime[6];
+  memcpy(testTime,&buffer[sizeof(UniqueIdentifier)-1+sizeof(dataRequest)-1+sizeof(counter)],sizeof(testTime));
   
   // Assumed that dataRequest was found:
   responseData toSend = onDataRequest();
+  uint32_t clockTime = RTC->MODE2.CLOCK.reg;
+  #if DEBUG == 1
+    Serial.print("Time of Request: ");
+    Serial.print((clockTime >> 26 & 0x1F)+2016);
+    Serial.print("/");
+    Serial.print((clockTime >> 22 & 0xF));
+    Serial.print("/");
+    Serial.print((clockTime >> 17 & 0x1F));
+    Serial.print(" ");
+    Serial.print(clockTime >> 12 & 0x1F);
+    Serial.print(":");
+    Serial.print(clockTime >> 6 & 0x3F);
+    Serial.print(":");
+    Serial.println(clockTime & 0x3F);
+  #endif
+  
+  if (clockTime >> 6 & 0x3F != lastMinute) passedMinutes++;
+  
+  if (passedMinutes >= 5) {
+    Serial.print("Updated RTC to: ");
+    for (int i = 0; i < sizeof(testTime); i++) {
+      Serial.print(testTime[i]);
+      Serial.print(" ");
+    }
+    passedMinutes = 0;
+    Serial.println();
+    updateRTC(testTime[2],testTime[1],testTime[0],testTime[3],testTime[4],testTime[5]);
+  }
+  else {
+    Serial.print("Only ");
+    Serial.print(passedMinutes);
+    Serial.println(" since last clock refresh... did not update.");
+  }
+  lastMinute = clockTime >> 6 & 0x3F;
   byte toSendBuff[sizeof(dataResponse)+sizeof(toSend)-1+sizeof(counter)+4];
   memcpy(toSendBuff,dataResponse,sizeof(dataResponse)-1); // "DataResponse:"
   memcpy(&toSendBuff[sizeof(dataResponse)-1],&toSend,sizeof(toSend));
   *((uint32_t *)&toSendBuff[sizeof(dataResponse)-1+sizeof(toSend)]) = counter;
-  *((uint32_t *)&toSendBuff[sizeof(dataResponse)-1+sizeof(toSend)+sizeof(counter)]) = RTC->MODE2.CLOCK.reg;
+  *((uint32_t *)&toSendBuff[sizeof(dataResponse)-1+sizeof(toSend)+sizeof(counter)]) = clockTime;
   if (!cl.connected()) {
     Serial.println("Not connected.");
   }
   cl.write(toSendBuff,sizeof(toSendBuff));
-  Serial.println("Bitches.");
+  Serial.println("Sent.");
   counter++;
   return true;
 }
@@ -692,9 +770,11 @@ void clkInit() {
   
   RTC->MODE2.CTRLA.reg |= RTC_MODE2_CTRLA_MODE(0x2);
   RTC->MODE2.CTRLA.reg &= ~RTC_MODE2_CTRLA_CLKREP;
-  RTC->MODE2.CTRLA.reg |=  RTC_MODE2_CTRLA_CLOCKSYNC | RTC_MODE2_CTRLA_PRESCALER(0xB)
-                           | RTC_MODE2_CTRLA_ENABLE; // enable
+  RTC->MODE2.CTRLA.reg |=  RTC_MODE2_CTRLA_CLOCKSYNC | RTC_MODE2_CTRLA_PRESCALER(0xB) | RTC_MODE2_CTRLA_ENABLE; // enable
   while (RTC->MODE2.SYNCBUSY.bit.ENABLE); // sync
+  //RTC->MODE2.FREQCORR.bit.SIGN |= 0;
+  //RTC->MODE2.FREQCORR.bit.VALUE |= 1;
+  //while(RTC->MODE2.SYNCBUSY.bit.FREQCORR);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
