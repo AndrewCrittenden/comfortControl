@@ -11,12 +11,14 @@ SensorsWindow::SensorsWindow(QWidget *parent) : QWidget(parent)
     relHumidity = new QLCDNumber(this);
     globeTemp = new QLCDNumber(this);
     occupancy = new QLabel("Occupied", this);
+    pmv = new QLCDNumber(this);
     indoorTempLbl = new QLabel("Indoor Temperature", this);
     outdoorTempLbl = new QLabel("Outdoor Temperature", this);
     absHumidityLbl = new QLabel("Absolute Humidity", this);
     relHumidityLbl = new QLabel("Relative Humidity", this);
     globeTempLbl = new QLabel("Globe Temperature", this);
     occupancyLbl = new QLabel("Occupancy", this);
+    pmvLbl = new QLabel("Predicted Mean Vote", this);
     layout->addWidget(indoorTempLbl,1,1);
     layout->addWidget(indoorTemp,1,2);
     layout->addWidget(outdoorTempLbl,2,1);
@@ -29,6 +31,8 @@ SensorsWindow::SensorsWindow(QWidget *parent) : QWidget(parent)
     layout->addWidget(globeTemp,5,2);
     layout->addWidget(occupancyLbl,6,1);
     layout->addWidget(occupancy,6,2);
+    layout->addWidget(pmvLbl,7,1);
+    layout->addWidget(pmv,7,2);
     layout->addWidget(backButton,0,3);
     this->setLayout(layout);
 }

@@ -16,10 +16,10 @@ public:
     ~HomeWindow();
     QPushButton *sensorsButton;
     QPushButton *exitButton;
+    QDial *tempDial;
 
 private:
     QGridLayout *layout;
-    QDial *tempDial;
     QLCDNumber *desiredTemp;
 
 signals:

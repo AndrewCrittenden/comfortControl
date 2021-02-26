@@ -15,6 +15,8 @@ public:
     void setupWindow();
     ~MainWindow();
     HomeWindow *home;
+    double indoorTemp, outdoorTemp, absHumidity, relHumidity, globeTemp, pmv;
+    bool occupancy;
 
 private:
     QStackedWidget *stack;
@@ -25,7 +27,8 @@ signals:
 
 public slots:
     void setWindow(QWidget *w);
-
+    void IPCRecieveComfort();
+    void IPCSendComfort(int dt);
 };
 
 #endif // MAINWINDOW_H
