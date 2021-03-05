@@ -1,6 +1,7 @@
 #include <types.h>
 #include <uECC.h>
 #include <uECC_vli.h>
+#include <time.h>
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
@@ -8,20 +9,20 @@
 #include <SHA256.h>
 
 // 1) Uncomment the type of node you are using
-#define TEST_SENSOR
+//#define TEST_SENSOR
 //#define GLOBE_SENSOR
 //#define REL_HUMIDITY
-//#define OUTPUTNODE
 //#define INDOOR
 //#define OUTDOOR
 //#define OCCUPANCY
+//#define OUTPUTNODE
 
 /*
 #define SPIWIFI       SPI  // The SPI port
 #define SPIWIFI_SS    13   // Chip select pin
 #define ESP32_RESETN  12   // Reset pin
 #define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1*/
+#define ESP32_GPIO0   -1 */
 
 
 // 2) Define your pins for the WiFi Module (See comments on each define)
@@ -104,7 +105,7 @@
 
 #ifdef OUTPUTNODE
   struct responseData {
-    double powerOut;
+    double powerIn;
   };
 #endif
 
@@ -124,13 +125,11 @@ int onTimerLoop() {
   
   return LOOP_TIMER;
 }
-responseData onDataSend() {
-  responseData data;
 
-  return data;
-}
  // must return a responseData containing the data to send to the server
  // Populate struct members here
+#ifndef OUTPUTNODE
+
 responseData onDataRequest() {
     responseData data;
 
@@ -138,10 +137,28 @@ responseData onDataRequest() {
   return data;
 }
 
+#endif
+
 // Function that runs after the data is pos edge (good for "runs once per data send" functions)
 void onDataEdge() {
   
 }
+
+
+//--------------------------------FUNCTIONS FOR OUTPUT NODES------------------------------------------------------///
+#ifdef OUTPUTNODE
+
+// Function for Output Node code -- will run after receiving a new value from the centralized interface
+// inData contains the received data, as per the struct given above for OUTPUTNODE
+void onDataReceived(responseData inData) {
+  // Code for what to do with incoming data here
+
+  
+  //Serial.print("Received Value: ");
+  //Serial.println(inData.powerIn);
+}
+
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -173,13 +190,18 @@ char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as k
 const byte UniqueIdentifier[] = "COMFORTController V0.1";
 const byte dataRequest[] = "DataRequest:";
 const byte dataResponse[] = "Response:";
+const byte dataOutput[] = "Output Data:";
+const byte dataReceived[] = "DataReceived";
 const int PACKET_SIZE = 128;
 const int AUTH_EXACT_SIZE = 118;
 const int PUBKEY_SIZE = 64;
 const int RETURN_PACKET_SIZE = 0;
 uint32_t seed;
 uint32_t counter;
-responseData data;
+
+#ifdef OUTPUTNODE
+responseData dataBuffer;
+#endif
 
 int keyIndex = 0;            // your network key Index number (needed only for WEP)
 unsigned int localPort = 20000;
@@ -221,28 +243,53 @@ void loop() {
     unsigned int timerDelay = 0;
     unsigned int lastRunTime = 0;
     onDataEdge();
-    while(!(dataRequestReceived(Tcp))) {
-      if ((RTC->MODE2.CLOCK.reg - lastRunTime) >= timerDelay*1000) {
-        #if (DEBUG == 1)
-           Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
-          Serial.print("/");
-          Serial.print(RTC->MODE2.CLOCK.bit.DAY);
-          Serial.print("/");
-          Serial.print(RTC->MODE2.CLOCK.bit.YEAR+2016);
-          Serial.print(" ");
-          Serial.print(RTC->MODE2.CLOCK.bit.HOUR);
-          Serial.print(":");
-          Serial.print(RTC->MODE2.CLOCK.bit.MINUTE);
-          Serial.print(":");
-          Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
-        #endif
-        timerDelay = onTimerLoop();
-        if (timerDelay == 0) {
-          timerDelay++;
+    #ifdef OUTPUTNODE
+      while(!(dataRefreshReceived(Tcp))) {
+        if ((RTC->MODE2.CLOCK.reg - lastRunTime) >= timerDelay*1000) {
+          #if (DEBUG == 1)
+             Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
+            Serial.print("/");
+            Serial.print(RTC->MODE2.CLOCK.bit.DAY);
+            Serial.print("/");
+            Serial.print(RTC->MODE2.CLOCK.bit.YEAR+2016);
+            Serial.print(" ");
+            Serial.print(RTC->MODE2.CLOCK.bit.HOUR);
+            Serial.print(":");
+            Serial.print(RTC->MODE2.CLOCK.bit.MINUTE);
+            Serial.print(":");
+            Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
+          #endif
+          timerDelay = onTimerLoop();
+          if (timerDelay == 0) {
+            timerDelay++;
+          }
+          lastRunTime = RTC->MODE2.CLOCK.reg;
         }
-        lastRunTime = RTC->MODE2.CLOCK.reg;
       }
-    }
+  #else
+    while(!(dataRequestReceived(Tcp))) {
+        if ((RTC->MODE2.CLOCK.reg - lastRunTime) >= timerDelay*1000) {
+          #if (DEBUG == 1)
+             Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
+            Serial.print("/");
+            Serial.print(RTC->MODE2.CLOCK.bit.DAY);
+            Serial.print("/");
+            Serial.print(RTC->MODE2.CLOCK.bit.YEAR+2016);
+            Serial.print(" ");
+            Serial.print(RTC->MODE2.CLOCK.bit.HOUR);
+            Serial.print(":");
+            Serial.print(RTC->MODE2.CLOCK.bit.MINUTE);
+            Serial.print(":");
+            Serial.println(RTC->MODE2.CLOCK.bit.SECOND);
+          #endif
+          timerDelay = onTimerLoop();
+          if (timerDelay == 0) {
+            timerDelay++;
+          }
+          lastRunTime = RTC->MODE2.CLOCK.reg;
+        }
+      }
+  #endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -486,7 +533,7 @@ void authenticate() {
       packetReceived = true;
     }
     delay(500);
-    Serial.print("Heartbeat is cool: ");
+    Serial.print("Heartbeat: ");
     Serial.println(WiFi.localIP());
   }
 
@@ -657,9 +704,136 @@ void authenticate() {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef OUTPUTNODE
+bool dataRefreshReceived(WiFiClient cl) {
+  byte buffer[128];
+  int bytesReceived = cl.available() & 127;
+
+  if (!(bytesReceived)) {
+    return false;
+  }
+  // Verify that the ping is correct:
+  // Receives: Encrypted(Unique Identifier + "Output Data:" + responseData + counter + timestamp)
+  for(int i = 0; i < bytesReceived; i++) {
+      buffer[i] = (byte)cl.read();
+  }
+  
+  Serial.print("before decrypt: ");
+  for (int i = 0; i < bytesReceived; i++) {
+          Serial.print(buffer[i],HEX);
+          Serial.print(" ");
+         }
+         Serial.println();
+         Serial.print("Shared Key: ");
+         for (int i = 0; i < sizeof(sharedKey); i++) {
+          Serial.print(sharedKey[i],HEX);
+          Serial.print(" ");
+         }
+         Serial.println();
+         Serial.print("IV: ");
+         for (int i = 0; i < sizeof(IV); i++) {
+          Serial.print(IV[i],HEX);
+          Serial.print(" ");
+         }
+         Serial.println();
+  int pingSize = AES_Decrypt((uint8_t *)buffer, (uint8_t *)buffer, bytesReceived);
+
+  // Compare: Counter, Identifier, & dataOutput
+  if (memcmp(UniqueIdentifier,buffer,sizeof(UniqueIdentifier)-1) ||
+     memcmp(dataOutput,&buffer[sizeof(UniqueIdentifier)-1],sizeof(dataOutput)-1) ||
+      (*((uint32_t *)&buffer[sizeof(UniqueIdentifier)+sizeof(dataOutput)-2+sizeof(responseData)]) != counter)) {
+         Serial.println("Invalid dataRequest ping.");
+         Serial.println();
+         Serial.print("Counter: ");
+         Serial.println(counter);
+         Serial.print("Received Counter: ");
+         Serial.println(*((uint32_t *)&buffer[sizeof(UniqueIdentifier)+sizeof(dataOutput)-2+sizeof(responseData)]));
+         return false;
+  }
+
+  // Compare the time stamp... if it is greater than 5 seconds, scrap it. If it is greater than 2, but less than 5 seconds, replace it.
+  byte testTime[6];
+  memcpy(testTime,&buffer[sizeof(UniqueIdentifier)-1+sizeof(dataOutput)-1+sizeof(counter)+sizeof(responseData)],sizeof(testTime));
+  tm tme;
+  tme.tm_year = 116 + testTime[2];
+  tme.tm_mon = testTime[1] - 1;
+  tme.tm_mday = testTime[0];
+  tme.tm_hour = testTime[3];
+  tme.tm_min = testTime[4];
+  tme.tm_sec = testTime[5];
+  time_t unix  = mktime((tm *)&tme);
+
+  uint32_t clockTime = RTC->MODE2.CLOCK.reg;
+  tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
+  tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
+  tme.tm_mday = (clockTime >> 17 & 0x1F);
+  tme.tm_hour = (clockTime >> 12 & 0x1F);
+  tme.tm_min = (clockTime >> 6 & 0x3F);
+  tme.tm_sec = (clockTime & 0x3F);
+  time_t internalUnix = mktime((tm *)&tme);
+  int diff = (internalUnix > unix) ? ((int)internalUnix - (int)unix) : ((int)unix - (int)internalUnix);
+
+  Serial.print("Difference between clocks: ");
+  Serial.println(diff);
+
+  if (diff > 5) {
+    // Reject monke
+    Serial.println("Error: Timestamp deviates too far from held value.");
+    return false;
+  }
+  
+  else if (diff > 3) {
+    Serial.println("Greater than 3 seconds difference, refreshing clock to last time stamp.");
+    updateRTC(testTime[2],testTime[1],testTime[0],testTime[3],testTime[4],testTime[5]);
+  }
+  
+  else {
+    Serial.print("Time difference only ");
+    Serial.print(diff);
+    Serial.println(" deviated. No refresh needed.");
+  }
+
+  dataBuffer = (*((responseData*)&buffer[sizeof(UniqueIdentifier)+sizeof(dataOutput)-2]));  // (*((uint32_t *)&buffer[sizeof(UniqueIdentifier)+sizeof(dataOutput)-2+sizeof(responseData)])
+  // 2 1 0 3 4 5
+  // void updateRTC(byte year, byte month, byte day, byte hour, byte minute, byte second)
+  // Convert to unix time, from 2016 because why not:
+  // TODO: parse the incoming refresh data
+  // TODO: Send back confirmation of sent data
+  if (!cl.connected()) {
+    Serial.println("Not connected.");
+    return false;
+  }
+
+  clockTime = RTC->MODE2.CLOCK.reg;
+  
+  // Send response: Response should be -- UniqueIdentifier + "DataReceived" + counter + timestamp
+  // Can clear buffer as it's not needed anymore:
+  byte sendbuffer[sizeof(UniqueIdentifier)+sizeof(dataReceived)+sizeof(uint32_t)+sizeof(uint32_t)-2];
+  memset(sendbuffer,0,sizeof(sendbuffer));
+  memcpy(sendbuffer,UniqueIdentifier,sizeof(UniqueIdentifier)-1); // Copy uniqueidentifier
+  memcpy(&sendbuffer[sizeof(UniqueIdentifier)-1],dataReceived,sizeof(dataReceived)-1); // copy datareceived
+  memcpy(&sendbuffer[sizeof(UniqueIdentifier)+sizeof(dataReceived)-2],(byte *)&counter,sizeof(uint32_t)); // copy counter
+  memcpy(&sendbuffer[sizeof(UniqueIdentifier)+sizeof(dataReceived)-2+sizeof(uint32_t)],(byte *)&clockTime,sizeof(uint32_t)); // copy timestamp
+
+  byte writeBuffer[sizeof(sendbuffer)+16];
+  int sizey = AES_Encrypt(sendbuffer,writeBuffer,sizeof(sendbuffer));
+  Serial.print(cl.write(writeBuffer,sizey));
+  Serial.println(" Byte Sized Pieces Sent.");
+  
+  counter++;
+  onDataReceived(dataBuffer);
+  
+  return true;
+}
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 uint8_t passedMinutes = 0;
 uint8_t lastMinute = 0;
 
+#ifndef OUTPUTNODE
 bool dataRequestReceived(WiFiClient cl) {
   byte buffer[128];
   int bytesReceived = cl.available() & 127;
@@ -751,12 +925,17 @@ bool dataRequestReceived(WiFiClient cl) {
   if (!cl.connected()) {
     Serial.println("Not connected.");
   }
-  cl.write(toSendBuff,sizeof(toSendBuff));
-  Serial.println("Sent.");
+
+  byte writeBuffer[sizeof(toSendBuff)+16];
+ 
+  int sizey = AES_Encrypt(toSendBuff,writeBuffer,sizeof(toSendBuff));
+  
+  Serial.print(cl.write(writeBuffer,sizey));
+  Serial.println(" Byte Sized Pieces Sent.");
   counter++;
   return true;
 }
-
+#endif
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void clkInit() {
@@ -816,8 +995,17 @@ uint32_t AES_Encrypt(const uint8_t* plaintext, uint8_t * cipherout, size_t sizeT
   for (int i = 0; i < paddingSize; i++) {
     cipherout[sizeT + i] = paddingSize;
   }
-
+  /*
+  Serial.print("Encrypt my ass: ");
+  for (int i = 0; i < sizeT+paddingSize; i++) {
+    Serial.print(cipherout[i],HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+  */
   aes_cbc_encrypt_256b(cipherout, cipherout, sizeT + paddingSize, IV);
+
+  
   return sizeT + paddingSize;
 }
 
@@ -842,6 +1030,7 @@ void aes_cbc_encrypt_256b(const uint8_t *plaintext, uint8_t *ciphertext, size_t 
   // Further assistance provided by:  https://github.com/manitou48/samd51/blob/master/aes.ino
 
   memcpy((uint8_t *)&REG_AES_INTVECTV0, iv, 16);
+  memcpy((uint8_t *)&REG_AES_KEYWORD0, sharedKey, sizeof(sharedKey));
   REG_AES_CTRLA = 0;
   REG_AES_CTRLA = AES_CTRLA_AESMODE_CBC | AES_CTRLA_CIPHER_ENC | AES_CTRLA_ENABLE | AES_CTRLA_KEYSIZE_256BIT;
   REG_AES_CTRLB = AES_CTRLB_NEWMSG;
