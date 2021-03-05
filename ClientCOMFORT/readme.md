@@ -1,4 +1,4 @@
-# TODO: Client COMFORT code for Arduino/Adafruit ItsyBitsy + AirLift ESP32
+# Client COMFORTController API/Framework for Arduino/Adafruit ItsyBitsy + AirLift ESP32
 
 ## Getting Started
 1. Install the libraries specified below in "Required dependencies"
