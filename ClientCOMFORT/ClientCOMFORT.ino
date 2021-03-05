@@ -126,6 +126,12 @@ int onTimerLoop() {
   return LOOP_TIMER;
 }
 
+// Function that runs after the data is pos edge (good for "runs once per data send" functions)
+void onDataEdge() {
+  
+}
+//--------------------------------FUNCTIONS FOR INPUT NODES------------------------------------------------------///
+
  // must return a responseData containing the data to send to the server
  // Populate struct members here
 #ifndef OUTPUTNODE
@@ -138,12 +144,6 @@ responseData onDataRequest() {
 }
 
 #endif
-
-// Function that runs after the data is pos edge (good for "runs once per data send" functions)
-void onDataEdge() {
-  
-}
-
 
 //--------------------------------FUNCTIONS FOR OUTPUT NODES------------------------------------------------------///
 #ifdef OUTPUTNODE
@@ -995,14 +995,7 @@ uint32_t AES_Encrypt(const uint8_t* plaintext, uint8_t * cipherout, size_t sizeT
   for (int i = 0; i < paddingSize; i++) {
     cipherout[sizeT + i] = paddingSize;
   }
-  /*
-  Serial.print("Encrypt my ass: ");
-  for (int i = 0; i < sizeT+paddingSize; i++) {
-    Serial.print(cipherout[i],HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-  */
+  
   aes_cbc_encrypt_256b(cipherout, cipherout, sizeT + paddingSize, IV);
 
   
