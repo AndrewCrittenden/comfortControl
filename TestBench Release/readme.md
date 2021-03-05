@@ -1,4 +1,4 @@
 # Test Bench -- Latest Release
 COMFORT Control: Team 11 from University of Kentucky EE491 Spring 2021 Semester
 
-TestBench
+[logo] : https://github.com/AndrewCrittenden/comfortControl/raw/main/TestBench%20Release/image.PNG "Image"
