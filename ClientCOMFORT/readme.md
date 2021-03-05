@@ -5,9 +5,9 @@
 2. Uncomment your node type's #define statement
 3. Verify that the struct containing your data you are sending is correct (responseData)
 4. Check your pins, ensure the pin numbers match what you are using on the Itsybitsy
-5. Write code as per the API. DO NOT EDIT ANYTHING OUTSIDE OF IT.
+5. Write code as per the API. DO NOT EDIT NON-API FUNCTIONS.
 6. "COMFORTSetup() acts like Arduino's Setup(), TimerLoop() acts like Loop(). See API.
-7. Any further questions, please let Tyler know on Microsoft Teams.
+7. Any further questions, please let Tyler/Joseph know on Microsoft Teams.
 
 
 ## Required Dependencies
