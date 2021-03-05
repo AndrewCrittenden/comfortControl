@@ -2,12 +2,14 @@
 
 ## Getting Started
 1. Install the libraries specified below in "Required dependencies"
-2. Uncomment your node type's #define statement
-3. Verify that the struct containing your data you are sending is correct (responseData)
-4. Check your pins, ensure the pin numbers match what you are using on the Itsybitsy
-5. Write code as per the API. DO NOT EDIT NON-API FUNCTIONS.
-6. "COMFORTSetup() acts like Arduino's Setup(), TimerLoop() acts like Loop(). See API.
-7. Any further questions, please let Tyler/Joseph know on Microsoft Teams.
+2. Code is found in the file "ClientCOMFORT.ino" and "arduino_secrets.h"
+3. Edit "arduino_secrets.h" to have your SSID and pre-shared key of your AP
+4. Uncomment your node type's #define statement
+5. Verify that the struct containing your data you are sending is correct (responseData)
+6. Check your pins, ensure the pin numbers match what you are using on the Itsybitsy
+7. Write code as per the API. DO NOT EDIT NON-API FUNCTIONS.
+8. "COMFORTSetup() acts like Arduino's Setup(), TimerLoop() acts like Loop(). See API.
+9. Any further questions, please let Tyler/Joseph know on Microsoft Teams.
 
 
 ## Required Dependencies
