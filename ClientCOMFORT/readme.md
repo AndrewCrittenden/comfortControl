@@ -12,7 +12,9 @@
 
 ## Required Dependencies
 Instructions on how to install libraries/boards can be found here: https://learn.adafruit.com/introducing-adafruit-itsybitsy-m4/using-with-arduino-ide
+
 Instructions to install libraries based on a zip you downloaded (i.e. WiFiNiNa) can be found here: https://learn.adafruit.com/adafruit-airlift-breakout/arduino
+
 Add the Adafruit json to the Additional Boards Manager URL, as found on this link: https://learn.adafruit.com/introducing-adafruit-itsybitsy-m4/setup
 
 1. Modified version of WiFiNiNa, found here: https://github.com/adafruit/WiFiNINA/archive/master.zip
