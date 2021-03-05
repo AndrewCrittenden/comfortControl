@@ -20,11 +20,22 @@ Clear Devices – Clears Device List
 
 Start Auto – Begins automatically querying the nodes every 20 seconds, simulating the server (with a shorter time period between queries for testing purposes) 
 
-Test Fridge – Sends information to the heating/cooling device, changing its value 
+Change Output Val – Sends information to the heating/cooling device, changing its value 
 
 Choose-WiFi-Adapter – Due to more than one adapter being on a PC, this allows you to select the adapter you're using for this project 
 
 Save/Clear Logs – Does things to the log on the right 
+
+## Getting Started:
+
+1) Power on node device and wait for it to give the "Heartbeat: ..." output in the Arduino console.
+2) You may need to press the Choose-WiFi-Adapter button to select the correct network adapter if you have more than one. If it doesn't work, make sure to check this.
+3) Press the Authenticate button. The device should show up in the table below the buttons after a short delay.
+4) Input nodes can skip this step. Output nodes should press the Change Output Val button and set the desired output value.
+5) Press the Request Sensor Data button. Input node data should appear in the console, data will be sent to output nodes.
+
+You may press the Start Auto button if desired. This will cause a request for sensor data/output to nodes every 20 seconds, similar to the real server.
+
 
  
 ### Devices should appear with their information in the list if validated properly: 
