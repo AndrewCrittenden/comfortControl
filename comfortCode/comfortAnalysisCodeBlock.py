@@ -31,11 +31,11 @@ setpoint_temp = 67
 
  
 ############################################################################################  
-if count> 365*1440 : #keep the number of saved data points from being too large - can adjust is 1 year is too many
+if count> 365*1440 : #keep the number of saved data points from being too large - can adjust if 1 year is too many
    tout_reset = np.zeros(1440*365) 
    tout_reset[0:1440*30-1] = tout_saved[365*1440 -30*1440: 365*1440]
    tout_saved = tout_reset
-   count = 1440*30 + 1 
+   count = 1440*30 + 1 #starts at zero, count number represents the number of run about to happen adn sensor data just received
 
 #sensor data here to be removed once the data is read in
 tdb = 75# dry-bulb air temperature, [$^{\circ}$C]
