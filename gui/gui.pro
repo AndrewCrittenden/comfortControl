@@ -28,12 +28,16 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     sensorswindow.cpp \
-    homewindow.cpp
+    homewindow.cpp \
+    PIDmain.cpp \
+    PID.c
 
 HEADERS += \
         mainwindow.h \
     sensorswindow.h \
-    homewindow.h
+    homewindow.h \
+    PID.h \
+    measurements.h
 
 FORMS +=
 

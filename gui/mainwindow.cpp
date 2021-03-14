@@ -1,20 +1,20 @@
 #include "mainwindow.h"
 #include <QCoreApplication>
-//#include <QTimer>
 #include <QFileSystemWatcher>
-
 #include <stdio.h>
-#include <string>
 #include <unistd.h>
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <QThread>
+#include <QTimer>
+#include "measurements.h"
 using namespace std;
 
 const int MAX_IPC_CHAR = 100;
+const int REFRESH_MEASUREMENTS = 1000; // units milliseconds
 
 //MainWindow is the controller used to switch between windows and close the application
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     stack->addWidget(home);
     stack->addWidget(sensors);
     stack->setCurrentWidget(home);
-    stack->setWindowState(Qt::WindowFullScreen);
+    //stack->setWindowState(Qt::WindowFullScreen);
     stack->show();
 }
 
@@ -33,29 +33,43 @@ void MainWindow::setupWindow(){
     QObject::connect(sensors->backButton, &QPushButton::clicked, [=] { setWindow(home); });
     QObject::connect(home->sensorsButton, &QPushButton::clicked, [=] { setWindow(sensors); });
     QObject::connect(home->exitButton, &QPushButton::clicked, [=] { stack->close(); });
-    //QObject::connect(home->exitButton, &QPushButton::clicked, QCoreApplication::instance(), &QCoreApplication::quit );
-    //QObject::connect(stack, &QObject::destroyed, QCoreApplication::instance(), &QCoreApplication::quit);
-    //IPCRecieveComfort();
-    //QTimer *IPCtimer = new QTimer(this);
-    //QTimer *IPCtimer2 = new QTimer(this);
-    //QObject::connect(IPCtimer, &QTimer::timeout, this, &MainWindow::IPCSendComfort);
-    //QObject::connect(IPCtimer, &QTimer::timeout, this, &MainWindow::IPCRecieveComfort);
-    //IPCtimer->start(1500);
-    //IPCtimer2->start(3000);
-
+    QTimer *sensorTimer = new QTimer(this);
+    QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::refreshMeasurements);
+    sensorTimer->start(REFRESH_MEASUREMENTS);
+    //IPC communication with comfortAnalysis.py
     QFileSystemWatcher *IPCrecieveTrigger = new QFileSystemWatcher;
-    //QFileSystemWatcher *IPCsendTrigger = new QFileSystemWatcher;
     IPCrecieveTrigger->addPath("/home/pi/WA/comfortControl/fifo/comfortToGui.fifo");
-    //IPCsendTrigger->addPath("/home/pi/WA/comfortControl/fifo/guiToComfort.fifo");
     QObject::connect(IPCrecieveTrigger, &QFileSystemWatcher::fileChanged, this, &MainWindow::IPCRecieveComfort);
     QObject::connect(home->tempDial, &QDial::valueChanged, this, &MainWindow::IPCSendComfort);
-    //QObject::connect(IPCrecieveTrigger, &QFileSystemWatcher::fileChanged, this, &MainWindow::IPCSendComfort);
-    //system("python3 /home/pi/WA/comfortControl/comfortCode/IPCSample.py");
     IPCSendComfort(0);
 }
 
+void MainWindow::refreshMeasurements(){
+    //qDebug("Recieving from wireless");
+    //TODO fetch wireless data from Tyler
+    g_indoorTemp = (80 - 60) * ((((float) rand()) / (float) RAND_MAX)) + 60;
+    g_outdoorTemp = (80 - 60) * ((((float) rand()) / (float) RAND_MAX)) + 60;
+    g_relHumidity = (1 - 0) * ((((float) rand()) / (float) RAND_MAX)) + 0;
+    g_globeTemp = (80 - 60) * ((((float) rand()) / (float) RAND_MAX)) + 60;
+    bool occupancy_options[] = {true, false};
+    g_occupancy = occupancy_options[rand()%2];
+    string activity_options[] = {"resting","moderately active","active"};
+    g_activityLevel = activity_options[rand()%3];
+    qDebug() << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
+    sensors->indoorTemp->display(g_indoorTemp);
+    sensors->outdoorTemp->display(g_outdoorTemp);
+    sensors->relHumidity->display(g_relHumidity);
+    sensors->globeTemp->display(g_globeTemp);
+    if (g_occupancy) {
+           sensors->occupancy->setText("Occupied");
+    }
+       else {
+           sensors->occupancy->setText("Vacant");
+    }
+    IPCSendComfort(g_desiredTemp);
+}
+
 void MainWindow::IPCRecieveComfort(){
-    qDebug("Recieving from comfort");
     const char *fifo = "/home/pi/WA/comfortControl/fifo/comfortToGui.fifo";
     mkfifo(fifo, 0666);
     int fd = open(fifo,O_RDONLY);
@@ -64,22 +78,24 @@ void MainWindow::IPCRecieveComfort(){
     QString str = QString(buf);
     QStringList list = str.split(',');
     //qDebug() << list;
-    sensors->indoorTemp->display(list[0].toDouble());
-    sensors->outdoorTemp->display(list[1].toDouble());
-    sensors->absHumidity->display(list[2].toDouble());
-    sensors->relHumidity->display(list[3].toDouble());
-    sensors->globeTemp->display(list[4].toDouble());
-    if (list[5] == "True") {
-        sensors->occupancy->setText("Occupied"); }
-    else {
-        sensors->occupancy->setText("Vacant"); }
-    sensors->pmv->display(list[6].toDouble());
+    g_pmv = list[0].toFloat();
+    g_setpoint_temperature = list[1].toFloat();
+    sensors->pmv->display(g_pmv);
+    g_isComfortable = true;
+
 }
 
 void MainWindow::IPCSendComfort(int dt){
+    g_desiredTemp = dt;
     const char *fifo = "/home/pi/WA/comfortControl/fifo/guiToComfort.fifo";
-    mkfifo(fifo, 0666);
-    string dtStr = to_string(dt)+",resting,\n";
+    mkfifo(fifo, 0666);    
+    string dtStr = to_string(g_desiredTemp)+","+
+            g_activityLevel+","+
+            to_string(g_occupancy)+","+
+            to_string(g_globeTemp)+","+
+            to_string(g_relHumidity)+","+
+            to_string(g_outdoorTemp)+","+
+            to_string(g_indoorTemp)+"\n";
     int fd = open(fifo, O_NONBLOCK|O_RDWR);
     write(fd,dtStr.c_str(),dtStr.length()+1);
     ::close(fd);

@@ -27,6 +27,7 @@ signals:
 
 public slots:
     void setWindow(QWidget *w);
+    void refreshMeasurements();
     void IPCRecieveComfort();
     void IPCSendComfort(int dt);
 };
