@@ -19,7 +19,7 @@ import numpy as np
 #setpoint_temp, PMV, PMV_bool (we need PMV bool for Joseph I think)
 
 ##need you to add "tdb_reset = np.zeros(1440*365)" and "setpoint_temp = 0" in the pipes to run a single time like the variable count. 
-#I have them here so that I can test. I think we should also include the reset if loop at the top of the inside of the function
+#I have them here so that I can test. I think we should also include the reset if loop at the top of the inside of the function to keep from infinitely storing data
 #eventually we should remove all the print() statements and rely on the GUI
 
 
@@ -116,7 +116,7 @@ pmv = results[key1]
 
 #print(pmv)
 
-# print PMV value
+# print PMV value- this whole group can be eventually deleted
 print(f"pmv={results['pmv']}, ppd={results['ppd']}%")
 
 if pmv <= float(0.5) and pmv >= float(-0.5):
@@ -145,7 +145,7 @@ setpoints = adaptive_ashrae(tdb, tr, t_running_mean, v, units="IP")
 
 print(f"low={setpoints['tmp_cmf_90_low']}, high={setpoints['tmp_cmf_90_up']}%")
 
-if pmv <-0.5 and pmv>0.5:
+if pmv <-0.5 and pmv>0.5: #check if outside the comfortable range
     if occupancy == 1:
         #checking if the change fixed it summer
         PMV_bool = 0
@@ -241,7 +241,55 @@ if pmv <-0.5 and pmv>0.5:
             setpoint_temp = setpoint_temp
                                 
 else:
-    PMV_bool = 0
-    setpoint_temp = setpoint_temp # keep the same setpoint if it is in the comfortable range no need to cause the hvac to turn on if it is comfortable
-
+    PMV_bool = 1
+    if occupancy == 1:              
+        setpoint_temp = setpoint_temp # keep the same setpoint if it is in the comfortable range no need to cause the hvac to turn on if it is comfortable
+    else: #allow the comfort conditions to relax to with the (-1 to 1 range)
+        setpoint_low = setpoints['tmp_cmf_80_low']
+        tg = tdb + 2 #can adjust based on how the gt in the fridge changes with the heating or cooling
+        tr = t_mrt(tg, tdb, v, d=0.075, emissivity=0.95)
+        
+        results_low = pmv_ppd(tdb=tdb, tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
+        print('Using low setpoint')
+        print(f"pmv={results['pmv']}, ppd={results['ppd']}%")
+        
+        setpoint_high = setpoints['tmp_cmf_80_up']
+        tg = setpoint_high + 2 #can adjust based on how the gt in the fridge changes with the heating or cooling 
+        tr = t_mrt(tg, tdb, v, d=0.075, emissivity=0.95)
+        
+        results_high = pmv_ppd(tdb=tdb, tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
+        print('Using high setpoint')
+        print(f"pmv={results['pmv']}, ppd={results['ppd']}%")
+        
+        tdb = (setpoints['tmp_cmf_80_up'] + setpoints['tmp_cmf_80_low'])/2
+        tg = tdb + 2 #can adjust based on how the gt in the fridge changes with the heating or cooling
+        tr = t_mrt(tg, tdb, v, d=0.075, emissivity=0.95)
+        print('mid setpoint')
+        print(tdb)
+        
+        results_mid = pmv_ppd(tdb=tdb, tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
+        print('Using mid setpoint')
+        print(f"pmv={results['pmv']}, ppd={results['ppd']}%")
+            
+        if results_high < -1 or results_high > 1:
+            results_high = 0 #really low compared to the other options and wont be selected as it is an infeasible option
+            
+        if results_low < -1 or results_low > 1:
+            result_low = 0
+                
+        if results_mid < -1 or results_mid > 1:
+            results_mid = 0
+                    
+        #comparing the setpoints to select the one closest to the edge of the comfortable window to lead to maximum savings in energy costs
+        set_point_PMV = max( abs(0 - results_low), abs(0 - results_high), abs(0 - results_mid))  #this setpoint will be sent to Joseph
+                    
+        #select the temperature that corresponds to the PMV setpoint 
+        if set_point_PMV == results_high:
+            set_point_temp = setpoints['tmp_cmf_80_up']
+        if set_point_PMV == results_mid:
+            set_point_temp = (setpoints['tmp_cmf_80_up'] + setpoints['tmp_cmf_80_low'])/2
+        if set_point_PMV == results_low:
+            set_point_temp = setpoints['tmp_cmf_80_low']
+                           
+                  
 count = count+1
