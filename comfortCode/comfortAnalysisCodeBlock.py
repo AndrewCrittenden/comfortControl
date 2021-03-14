@@ -19,24 +19,24 @@ import numpy as np
 #setpoint_temp, PMV, PMV_bool (we need PMV bool for Joseph I think)
 
 ##need you to add "tdb_reset = np.zeros(1440*365)" and "setpoint_temp = 0" in the pipes to run a single time like the variable count. 
-#I have them here so that I can test. I think we should also include the reset if loop outside the funtion
+#I have them here so that I can test. I think we should also include the reset if loop at the top of the inside of the function
 #eventually we should remove all the print() statements and rely on the GUI
 
 
-tdb_saved = np.random.random_sample((1440*30 + 5*1440),) + 60 #testing that the indexing is done right
+tout_saved = np.random.random_sample((1440*30 + 5*1440),) + 60 #testing that the indexing is done right
 
 count = 1440*30 + 1440
 
 setpoint_temp = 67
 
-if count> 365*1440 :
-   tdb_reset = np.zeros(1440*365) 
-   tdb_reset[0:1440*30-1] = tdb_saved[365*1440 -30*1440: 365*1440]
-   tdb_saved = tdb_reset
-   num_runs = 1440*30 + 1 
-
  
-############################################################################################   
+############################################################################################  
+if count> 365*1440 : #keep the number of saved data points from being too large - can adjust is 1 year is too many
+   tout_reset = np.zeros(1440*365) 
+   tout_reset[0:1440*30-1] = tout_saved[365*1440 -30*1440: 365*1440]
+   tout_saved = tout_reset
+   count = 1440*30 + 1 
+
 #sensor data here to be removed once the data is read in
 tdb = 75# dry-bulb air temperature, [$^{\circ}$C]
 tg = 76 #globe temperature
@@ -135,9 +135,9 @@ num_runs = count  #get this value from pipes
 
 if num_runs <= 1440*30: #for when less than a months worth of data is collected 
     t_running_mean = 45 #average temperature in March in Lexington, KY 
-    tdb_saved[num_runs] = tdb
+    tout_saved[num_runs] = tout
 else : 
-    t_running_mean = sum(tdb_saved[(num_runs- 30*1440):num_runs])/(30*1440)
+    t_running_mean = sum(tout_saved[(num_runs- 30*1440):num_runs])/(30*1440)
     print(t_running_mean)
 
 setpoints = adaptive_ashrae(tdb, tr, t_running_mean, v, units="IP")
