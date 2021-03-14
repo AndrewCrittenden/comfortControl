@@ -18,8 +18,8 @@ import numpy as np
 #variable names to be passed to the GUI: tdb, rh, gt, tout, occupancy, errors_1 to 5, 
 #setpoint_temp, PMV, PMV_bool (we need PMV bool for Joseph I think)
 
-##need you to add "tdb_reset = np.zeros(1440*365)" and "setpoint_temp = 0" in the pipes tp run
-#once like the variable count. I have them here so that I can test. I think we should also include the reset outside the funtion
+##need you to add "tdb_reset = np.zeros(1440*365)" and "setpoint_temp = 0" in the pipes to run a single time like the variable count. 
+#I have them here so that I can test. I think we should also include the reset if loop outside the funtion
 #eventually we should remove all the print() statements and rely on the GUI
 
 
