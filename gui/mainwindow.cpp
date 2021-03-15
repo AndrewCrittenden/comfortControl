@@ -64,6 +64,7 @@ void MainWindow::refreshMeasurements(){
     sensors->outdoorTemp->display(g_outdoorTemp);
     sensors->relHumidity->display(g_relHumidity);
     sensors->globeTemp->display(g_globeTemp);
+    sensors->heatCoolOutput->display(g_heatCoolOutput);
     if (g_occupancy) {
            sensors->occupancy->setText("Occupied");
     }
@@ -85,6 +86,7 @@ void MainWindow::IPCRecieveComfort(){
     g_pmv = list[0].toFloat();
     g_setpoint_temperature = list[1].toFloat();
     sensors->pmv->display(g_pmv);
+    sensors->setpointTemp->display(g_setpoint_temperature);
     g_isComfortable = true;
 
 }

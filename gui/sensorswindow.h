@@ -20,7 +20,9 @@ public:
     QLCDNumber *relHumidity;
     QLCDNumber *globeTemp;
     QLabel *occupancy;
+    QLCDNumber *setpointTemp;
     QLCDNumber *pmv;
+    QLCDNumber *heatCoolOutput;
 
 private:
     QGridLayout *layout;
@@ -30,7 +32,9 @@ private:
     QLabel *relHumidityLbl;
     QLabel *globeTempLbl;
     QLabel *occupancyLbl;
+    QLabel *setpointTempLbl;
     QLabel *pmvLbl;
+    QLabel *heatCoolOutputLbl;
 };
 
 #endif // SENSORSWINDOW_H
