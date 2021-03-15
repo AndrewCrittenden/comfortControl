@@ -22,8 +22,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     stack = new QStackedWidget;
     home = new HomeWindow;
     sensors = new SensorsWindow;
+    settings = new settingswindow;
     stack->addWidget(home);
     stack->addWidget(sensors);
+    stack->addWidget(settings);
     stack->setCurrentWidget(home);
     //stack->setWindowState(Qt::WindowFullScreen);
     stack->show();
@@ -31,7 +33,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 void MainWindow::setupWindow(){
     QObject::connect(sensors->backButton, &QPushButton::clicked, [=] { setWindow(home); });
+    QObject::connect(settings->backButton, &QPushButton::clicked, [=] { setWindow(home); });
     QObject::connect(home->sensorsButton, &QPushButton::clicked, [=] { setWindow(sensors); });
+    QObject::connect(home->settingsButton, &QPushButton::clicked, [=] { setWindow(settings); });
     QObject::connect(home->exitButton, &QPushButton::clicked, [=] { stack->close(); });
     QTimer *sensorTimer = new QTimer(this);
     QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::refreshMeasurements);
@@ -95,7 +99,7 @@ void MainWindow::IPCSendComfort(int dt){
             to_string(g_globeTemp)+","+
             to_string(g_relHumidity)+","+
             to_string(g_outdoorTemp)+","+
-            to_string(g_indoorTemp)+"\n";
+            to_string(g_indoorTemp)+",\n";
     int fd = open(fifo, O_NONBLOCK|O_RDWR);
     write(fd,dtStr.c_str(),dtStr.length()+1);
     ::close(fd);

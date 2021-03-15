@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include "sensorswindow.h"
 #include "homewindow.h"
+#include "settingswindow.h"
 
 class MainWindow : public QMainWindow
 {
@@ -21,6 +22,7 @@ public:
 private:
     QStackedWidget *stack;
     SensorsWindow *sensors;
+    settingswindow *settings;
 
 signals:
     void exitApp();

@@ -40,10 +40,9 @@ int main(int argc, char *argv[])
     //Start PID thread
     QFuture<void> t1 = QtConcurrent::run(PIDmain);
     //Start comfortAnalysis process
-    QString comfortAnalysisPath = "/home/pi/WA/comfortControl/comfortCode/calc_pmv_ppd_senior_deisgn.py";
-    QString comfortAnalysisDemoPath = "/home/pi/WA/comfortControl/comfortCode/comfortAnalysisDemo.py";
+    QString comfortAnalysisPath = "/home/pi/WA/comfortControl/comfortCode/comfortAnalysis3152021.py";
     QProcess *comfortAnalysis = new QProcess;
-    comfortAnalysis->start(comfortAnalysisDemoPath);
+    comfortAnalysis->start(comfortAnalysisPath);
     //Run GUI application
     w.setupWindow();
     return a.exec();

@@ -16,6 +16,7 @@ public:
     ~HomeWindow();
     QPushButton *sensorsButton;
     QPushButton *exitButton;
+    QPushButton *settingsButton;
     QDial *tempDial;
 
 private:

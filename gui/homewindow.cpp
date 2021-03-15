@@ -8,10 +8,12 @@ HomeWindow::HomeWindow(QWidget *parent) : QWidget(parent)
     desiredTemp = new QLCDNumber(this);
     exitButton = new QPushButton("Exit", this);
     sensorsButton = new QPushButton("Sensors Status", this);
+    settingsButton = new QPushButton("Settings",this);
     layout->addWidget(desiredTemp,0,1);
     layout->addWidget(tempDial,1,1);
     layout->addWidget(exitButton,0,2);
     layout->addWidget(sensorsButton,0,0);
+    layout->addWidget(settingsButton,1,2);
     this->setLayout(layout);
     QObject::connect(tempDial, SIGNAL(valueChanged(int)), desiredTemp, SLOT(display(int)));
 }

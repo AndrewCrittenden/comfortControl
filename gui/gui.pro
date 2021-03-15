@@ -30,14 +30,16 @@ SOURCES += \
     sensorswindow.cpp \
     homewindow.cpp \
     PIDmain.cpp \
-    PID.c
+    PID.c \
+    settingswindow.cpp
 
 HEADERS += \
         mainwindow.h \
     sensorswindow.h \
     homewindow.h \
     PID.h \
-    measurements.h
+    measurements.h \
+    settingswindow.h
 
 FORMS +=
 

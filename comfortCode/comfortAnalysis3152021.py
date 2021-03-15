@@ -1,12 +1,11 @@
+#!/usr/bin/env python3
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 15 12:40:23 2021
 
 @author: rosem
 """
-
-
-#!/usr/bin/env python3
 
 import os
 import random
@@ -29,13 +28,13 @@ import numpy as np
 #or improve the comfort 
 
 #Default initial value, updated when GUI runs
-desiredTemp = 72
-activity = "resting"
-indoorTemp= 72
-globeTemp= 70
-relHumidity= 0.5
-outdoorTemp = 72
-occupancy = True
+desiredTemp = 72.0 #float
+activity = "resting" #string
+indoorTemp= 80.0 #tdb, dry-bulb air temperature, [$^{\circ}$C], float
+globeTemp= 78.0 #tg, globe temperature, float
+relHumidity= 50 #rh, relative humidity, [%], float
+outdoorTemp = 90.0 #tout, outdoor temperature, float
+occupancy = True # = 1 #occupancy
 
 # IPCsendGui function sends sensor reading to the GUI C++ code.
 def IPCsendGui(pmv, setpointTemp):
@@ -51,18 +50,21 @@ def IPCsendGui(pmv, setpointTemp):
 
 class IPCreceiveGui(PatternMatchingEventHandler):
     def on_modified(self, event):
-        global desiredTemp, activity
+        global desiredTemp, activity, indoorTemp, globeTemp, relHumidity, outdoorTemp, occupancy
         super(IPCreceiveGui, self).on_modified(event)
         with open("/home/pi/WA/comfortControl/fifo/guiToComfort.fifo", 'r') as f:
             buf = f.read()
         listVal = buf.split(',')
-        desiredTemp = listVal[0]
+        desiredTemp = float(listVal[0])
         activity = listVal[1]
-        occupancy = listVal[2]
-        globeTemp = listVal[3]
-        relHumidity = listVal[4]
-        outdoorTemp = listVal[5]
-        indoorTemp = listVal[6]
+        if (listVal[2] == "True"):
+            occupancy = True
+        else:
+            occupancy = False
+        globeTemp = float(listVal[3])
+        relHumidity = float(listVal[4])
+        outdoorTemp = float(listVal[5])
+        indoorTemp = float(listVal[6])
         print("Received: desiredTemp=",desiredTemp,
              ", activity=", activity,
              ", occupancy=", occupancy,
@@ -91,12 +93,12 @@ setpoint_temp_prev= desiredTemp
 def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
     #START###########################################
     #sensor data here to be removed once the data is read in
-    tdb = 80# dry-bulb air temperature, [$^{\circ}$C]
-    tg = 78#globe temperature
-    rh = 50 # relative humidity, [%]
-    tout = 90 #outdoor temperature
-    occupancy = 1 #occupancy
-    
+    #tdb = 80# dry-bulb air temperature, [$^{\circ}$C]
+    #tg = 78#globe temperature
+    #rh = 50 # relative humidity, [%]
+    #tout = 90 #outdoor temperature
+    #occupancy = 1 #occupancy
+    print(count, tdb, tg, rh, tout, occupancy)
     #formula to convert to Fahrenheit from Celsius
     #F = (Cx1.8) + 32
         
@@ -107,27 +109,27 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
     error_4 = ""
     error_5 = ""
     
-    if tdb <= 0 | tdb >= 110:  #test logic behind the measurements 
+    if tdb <= 0 or tdb >= 110:  #test logic behind the measurements 
         error_1 = "Malfunction indoor temp"
         
-    if tdb <= 55 | tdb >= 90:
+    if tdb <= 55 or tdb >= 90:
         error_2 = "Potential unsafe conditions" 
 
-    if rh < 0 | rh > 100:   
+    if rh < 0 or rh > 100:   
         error_3 = "Malfunction rh"
     
-    if tout < -50 | tout > 110:
+    if tout < -50 or tout > 110:
         error_4 ="Malfunction outdoor temp"
     
-    if tg <= 0 | tg >= 110:
+    if tg <= 0 or tg >= 110:
         error_5 ="Malfunction gt"
 
     #clothing level prediction
     if tout >= 75: #summer
         icl = 0.5 # clo_typical_ensembles('Typical summer indoor clothing') # calculate total clothing insulation
-    if tout < 75 & tout >= 60: #spring
+    if tout < 75 and tout >= 60: #spring
         icl = 0.61 #clo_typical_ensembles('Trousers, long-sleeve sweatshirt')
-    if tout < 60 & tout >= 45: #fall
+    if tout < 60 and tout >= 45: #fall
         icl = 0.74 #clo_typical_ensembles('Sweat pants, long-sleeve sweatshirt')
     if tout < 45: #winter
         icl = 1.0 #clo_typical_ensembles('Typical winter indoor clothing')
@@ -173,8 +175,9 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
 
     setpoint_options = np.array([60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,78,79,80])
     pmv_options = np.zeros(len(setpoint_options))
+    global setpoint_temp_prev
 
-    if occupancy == 1: #someone is home
+    if occupancy: #someone is home Occupancy = True
         if pmv >= -0.5 and pmv <= 0.5:
             pmv_bool = 1 #comfort conditions met
             print("Comfort Conditions met")
@@ -211,7 +214,7 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
             print("setpoint selected:")
             print(setpoint_temp)
 
-    if occupancy == 0: #someone is not home
+    else: #someone is not home Occupancy = False
         print("No one home")
         if pmv >= -1.0 and pmv <= 1.0:
             pmv_bool = 1 #comfort conditions met
@@ -293,6 +296,13 @@ def main():
         numComfortAnalysisRuns = 0
         while(1):
             #calculate pmv
+            print("Current: desiredTemp=",desiredTemp,
+                 ", activity=", activity,
+                 ", occupancy=", occupancy,
+                 ", globeTemp=", globeTemp,
+                 ", relHumidity=", relHumidity,
+                 ", outdoorTemp=", outdoorTemp,
+                 ", indoorTemp=", indoorTemp)
             pmv, setpointTemp = comfortAnalysis(numComfortAnalysisRuns, indoorTemp, globeTemp, relHumidity, outdoorTemp, occupancy)
             IPCsendGui(pmv, setpointTemp) 
             time.sleep(1)
