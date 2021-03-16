@@ -60,7 +60,7 @@ float ControlAlgorithm::getCurrentTemperature() {
 }
 void ControlAlgorithm::setSamplePeriod(int newSamplePeriod) {
     while(synchronized&&!mtx.try_lock());
-    pidctrl.sampletime = newSamplePeriod;
+    pid_sample(&pidctrl,newSamplePeriod);
     if (synchronized) mtx.unlock();
 } 
 int ControlAlgorithm::getSamplePeriod() {
