@@ -5,9 +5,6 @@
  */
 
 /* 
- * File:   ControlAlgorithm.h
- * Author: Joseph
- *
  * Created on March 15, 2021, 8:56 PM
  */
 
@@ -15,6 +12,8 @@
 #define CONTROLALGORITHM_H
 #include <utility>
 #include <tuple>
+#include <atomic>
+#include <mutex>
 #include "PID.h"
 
 class ControlAlgorithm {
@@ -38,11 +37,16 @@ public:
     bool needsUpdate();
     float doUpdate();
     void setInitial(float newTemperature, float newSetpoint, float newOutput = 0);
+    void beginAlgorithmLoop();
+    std::atomic<bool> exitFlag;
 private:
+    void algorithmLoop();
     float setpoint;
     float input;
     float output;
     struct pid_controller pidctrl;
+    std::mutex mtx;
+    bool synchronized;
 };
 
 #endif /* CONTROLALGORITHM_H */
