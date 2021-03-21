@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QDebug>
 #include <QSignalMapper>
+#include <QComboBox>
 
 class HomeWindow : public QWidget
 {
@@ -18,6 +19,7 @@ public:
     QPushButton *exitButton;
     QPushButton *settingsButton;
     QDial *tempDial;
+    QComboBox *activityBox;
 
 private:
     QGridLayout *layout;
@@ -25,6 +27,9 @@ private:
 
 signals:
     int sensorsButtonPressed();
+
+public slots:
+    void activityChanged(QString value);
 };
 
 #endif // HOMEWINDOW_H

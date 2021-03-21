@@ -12,14 +12,14 @@
 #include <QTime>
 
 bool g_isComfortable;
-float g_setpoint_temperature;
-float g_heatCoolOutput;
-float g_indoorTemp;
-float g_outdoorTemp;
-float g_relHumidity;
-float g_globeTemp;
+double g_setpoint_temperature;
+double g_heatCoolOutput;
+double g_indoorTemp;
+double g_outdoorTemp;
+double g_relHumidity;
+double g_globeTemp;
 bool g_occupancy;
-float g_pmv;
+double g_pmv;
 int g_desiredTemp;
 std::string g_activityLevel;
 
@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
     g_desiredTemp = 72;
     g_activityLevel = "resting";
     //Start PID thread
+    //TODO test that the PID thread is working
     float controlled_air_volume = 0.015; // I don't have the actual length/width/height handy right now
     const float max_cool = -2500;
     const float max_heat = 2500;
@@ -52,6 +53,7 @@ int main(int argc, char *argv[])
     controller.setInitial(18.3333,22.2222222222); // REQUIRED
     std::thread controlLoop(&ControlAlgorithm::beginAlgorithmLoop,&controller); // REQUIRED
     qDebug() << controller.getOutput();
+    qDebug() << "See initial PID output here ----------------------------";
     controller.exitFlag = true; // REQUIRED
     controlLoop.join(); // REQUIRED
     //QFuture<void> t1 = QtConcurrent::run(controller, &ControlAlgorithm::beginAlgorithmLoop);
@@ -63,3 +65,4 @@ int main(int argc, char *argv[])
     w.setupWindow();
     return a.exec();
 }
+

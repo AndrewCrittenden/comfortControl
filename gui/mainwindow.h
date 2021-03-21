@@ -6,6 +6,8 @@
 #include "sensorswindow.h"
 #include "homewindow.h"
 #include "settingswindow.h"
+#include "measurements.h"
+#include "servercomfort.h"
 
 class MainWindow : public QMainWindow
 {
@@ -18,6 +20,7 @@ public:
     HomeWindow *home;
     double indoorTemp, outdoorTemp, absHumidity, relHumidity, globeTemp, pmv;
     bool occupancy;
+    serverCOMFORT server;
 
 private:
     QStackedWidget *stack;

@@ -10,7 +10,8 @@
 #include <sys/stat.h>
 #include <QThread>
 #include <QTimer>
-#include "measurements.h"
+#include <QtConcurrent/QtConcurrent>
+
 using namespace std;
 
 const int MAX_IPC_CHAR = 100;
@@ -37,28 +38,38 @@ void MainWindow::setupWindow(){
     QObject::connect(home->sensorsButton, &QPushButton::clicked, [=] { setWindow(sensors); });
     QObject::connect(home->settingsButton, &QPushButton::clicked, [=] { setWindow(settings); });
     QObject::connect(home->exitButton, &QPushButton::clicked, [=] { stack->close(); });
-    QTimer *sensorTimer = new QTimer(this);
-    QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::refreshMeasurements);
-    sensorTimer->start(REFRESH_MEASUREMENTS);
+    QObject::connect(settings->authenticateButton, &QPushButton::clicked, [=] { server.authenticate = true; });
+    QObject::connect(settings->clearNodeButton, &QPushButton::clicked, [=] { server.clearNode = true; });
+    //Refresh measurement's from serverCOMFORT
+    QObject::connect(&server, &serverCOMFORT::inData_receivedChanged, this, &MainWindow::refreshMeasurements);
+    //QTimer *sensorTimer = new QTimer(this);
+    //QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::refreshMeasurements);
+    //sensorTimer->start(REFRESH_MEASUREMENTS);
     //IPC communication with comfortAnalysis.py
     QFileSystemWatcher *IPCrecieveTrigger = new QFileSystemWatcher;
     IPCrecieveTrigger->addPath("/home/pi/WA/comfortControl/fifo/comfortToGui.fifo");
     QObject::connect(IPCrecieveTrigger, &QFileSystemWatcher::fileChanged, this, &MainWindow::IPCRecieveComfort);
     QObject::connect(home->tempDial, &QDial::valueChanged, this, &MainWindow::IPCSendComfort);
     IPCSendComfort(0);
+    //Start serverCOMFORT thread
+    QFuture<void> future = QtConcurrent::run([this] {
+        server.serverOperation();
+    });
 }
 
 void MainWindow::refreshMeasurements(){
-    //qDebug("Recieving from wireless");
-    //TODO fetch wireless data from Tyler
-    g_indoorTemp = (80 - 60) * ((((float) rand()) / (float) RAND_MAX)) + 60;
-    g_outdoorTemp = (80 - 60) * ((((float) rand()) / (float) RAND_MAX)) + 60;
-    g_relHumidity = (1 - 0) * ((((float) rand()) / (float) RAND_MAX)) + 0;
-    g_globeTemp = (80 - 60) * ((((float) rand()) / (float) RAND_MAX)) + 60;
-    bool occupancy_options[] = {true, false};
-    g_occupancy = occupancy_options[rand()%2];
-    string activity_options[] = {"resting","moderately active","active"};
-    g_activityLevel = activity_options[rand()%3];
+    server.inData_received = false;
+    qDebug("Recieving from wireless");
+    qDebug() << "Server indoor is " << server.inData.indoor;
+    qDebug() << "Server outdoor is " << server.inData.outdoor;
+    qDebug() << "Server relHumidity is " << server.inData.relHumidity;
+    qDebug() << "Server globe is " << server.inData.globe;
+    qDebug() << "Server occupancy is " << server.inData.occupancy;
+    g_indoorTemp = server.inData.indoor;
+    g_outdoorTemp = server.inData.outdoor;
+    g_relHumidity = server.inData.relHumidity;
+    g_globeTemp = server.inData.globe;
+    g_occupancy = server.inData.occupancy;
     qDebug() << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
     sensors->indoorTemp->display(g_indoorTemp);
     sensors->outdoorTemp->display(g_outdoorTemp);

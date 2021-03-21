@@ -31,7 +31,9 @@ SOURCES += \
     homewindow.cpp \
     settingswindow.cpp \
     ControlAlgorithm.cpp \
-    PID.c
+    PID.c \
+    nodecomfort.cpp \
+    servercomfort.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -40,7 +42,9 @@ HEADERS += \
     measurements.h \
     settingswindow.h \
     ControlAlgorithm.h \
-    PID.h
+    PID.h \
+    nodecomfort.h \
+    servercomfort.h
 
 FORMS +=
 
@@ -48,3 +52,10 @@ FORMS +=
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+unix:!macx: LIBS += -L$$PWD/cryptopp850/ -lcryptopp
+
+INCLUDEPATH += $$PWD/cryptopp850
+DEPENDPATH += $$PWD/cryptopp850
+
+unix:!macx: PRE_TARGETDEPS += $$PWD/cryptopp850/libcryptopp.a

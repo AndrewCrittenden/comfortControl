@@ -5,6 +5,7 @@
 #include <QLayout>
 #include <QPushButton>
 #include <QLabel>
+#include <QSlider>
 
 class settingswindow : public QWidget
 {
@@ -12,10 +13,13 @@ public:
     explicit settingswindow(QWidget *parent = nullptr);
     ~settingswindow();
     QPushButton *backButton;
+    QPushButton *authenticateButton;
+    QPushButton *clearNodeButton;
+    QSlider *gatherFreqSlider;
 
 private:
     QGridLayout *layout;
-    QPushButton *authenticateButton;
+    QLabel *gatherFreqLbl;
 };
 
 #endif // SETTINGSWINDOW_H
