@@ -394,7 +394,7 @@ void serverCOMFORT::dataRequest() {
         }
     }
     inData = inDataBuf;
-	inData_received = true;
+	setInData_received(true);
 }
 
 const int SEND_WAIT = 2000;
