@@ -90,8 +90,8 @@ public:
     // Sensor data public members:
     dataIn inData;
     dataIn inDataBuf;
-    volatile dataOut outData;
-    volatile dataOut outDataBuf;
+    dataOut outData;
+    dataOut outDataBuf;
 
     // Socket data and information:
     int udpFDSend;

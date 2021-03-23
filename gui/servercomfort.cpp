@@ -21,12 +21,14 @@ void serverCOMFORT::serverOperation() {
     cout << std::dec << endl;
 
     cout << "Public Key, size of " << pubKey.size() << ": " << endl;
-    for (int i = 0; i < pubKey.size(); i++)
+    for (int i = 0; i < (int)pubKey.size(); i++)
         cout << std::hex << "0x" << (int)pubKey[i] << ", ";
     cout << std::dec << endl;
 
     cout << "Also public key length " << dh.PublicKeyLength() << endl;
+
     // Disabling this will end the server operation
+	active = true;
     while (active) {
 
         // Timer before new data refresh
@@ -34,7 +36,8 @@ void serverCOMFORT::serverOperation() {
         chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
         int ms = 0;
         int last_print_time = 0;
-        while (ms < timeDuration) {
+        while (ms < gatherFrequency) {
+
             //Authentication flag:
             if (authenticate) {
                 authentication();
@@ -44,7 +47,14 @@ void serverCOMFORT::serverOperation() {
             // Clear Devices flag:
             if (clearNode) {
                 clearNodes();
+				clearNode = false;
             }
+
+			// TODO: Set error flags with Andrew?
+			if (outData_toSend) {
+				sendData();
+				//outData_toSend = false;
+			}
 
             ms = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - t1).count();
             if (last_print_time < (ms/1000)) {
@@ -55,13 +65,13 @@ void serverCOMFORT::serverOperation() {
 
         cout << "Timer done." << endl;
         dataRequest();
-        authentication();
+		//outData.output = 420.69;
+		//sendData();
         printNodeCOMFORT();
     }
     return;
 }
 
-const int timeDuration = 5000;
 const int authenticationTime = 10000;
 
 void serverCOMFORT::authentication() {
@@ -83,11 +93,11 @@ void serverCOMFORT::authentication() {
 
     //bzero(&broadcast, sizeof(broadcast));
     //broadcast.sin_addr.s_addr = inet_addr("192.168.1.255");
-    cout << "BroadcastADRRDRR: ";
-    for (int i = 0; i < sizeof(int); i++) cout << (int)((uint8_t *)&broadcast.sin_addr.s_addr)[i] << ", ";
+    cout << "BroadcastAddr: ";
+    for (int i = 0; i < (int)sizeof(int); i++) cout << (int)((uint8_t *)&broadcast.sin_addr.s_addr)[i] << ", ";
     cout << endl;
     cout << "IP ADDR: ";
-    for (int i = 0; i < sizeof(int); i++) cout << (int)((uint8_t *)&addr.sin_addr.s_addr)[i] << ", ";
+    for (int i = 0; i < (int)sizeof(int); i++) cout << (int)((uint8_t *)&addr.sin_addr.s_addr)[i] << ", ";
     cout << endl;
 
     broadcast.sin_port = htons(outPort);
@@ -140,11 +150,11 @@ void serverCOMFORT::authentication() {
             // broadcast here
             uint8_t checkSum[16];
             memset(checkSum, 0, sizeof(checkSum));
-            for (int i = 0; i < UniqueIdentifier.length(); i++)
+            for (int i = 0; i < (int)UniqueIdentifier.length(); i++)
             {
                 checkSum[i & 15] ^= UniqueIdentifier[i];
             }
-            for (int i = 1; i < pubKey.SizeInBytes(); i++)
+            for (int i = 1; i < (int)pubKey.SizeInBytes(); i++)
             {
                 checkSum[(i-1) & 15] ^= pubKey[i];
             }
@@ -163,7 +173,7 @@ void serverCOMFORT::authentication() {
 
             // Time to learn how to send this out... yay....
             int sentSize = sendto(udpFDSend, broadcastMessage, sizeof(broadcastMessage), MSG_CONFIRM, (sockaddr *)&broadcast, sizeof(broadcast));
-            if (sentSize != sizeof(broadcastMessage)) {
+            if (sentSize != (int)sizeof(broadcastMessage)) {
                 cout << "Warning: Broadcast message not fully sent. Size " << sentSize << endl;
                 cerr << strerror(errno) << endl;
             }
@@ -209,8 +219,12 @@ void serverCOMFORT::authentication() {
                     RTCPlain[4] = (uint8_t)RTCtm->tm_min;
                     RTCPlain[5] = (uint8_t)RTCtm->tm_sec;
                     vector<uint8_t> RTCEncrypt;
-                    int outSize = Encrypt(RTCPlain, RTCEncrypt, it->shared, iv, sizeof(RTCPlain));
+                    Encrypt(RTCPlain, RTCEncrypt, it->shared, iv, sizeof(RTCPlain));
                     int size = write(newtcpFD, RTCEncrypt.data(), RTCEncrypt.size());
+					if (size != (int)RTCEncrypt.size()) {
+						cout << "Problem in sending back RTC..." << endl;
+						return;
+					}
                     it->connected = true;
                 }
             }
@@ -228,6 +242,7 @@ void serverCOMFORT::authentication() {
     close(tcpFDstart);
 }
 
+const int RECV_WAIT = 2000;
 // Requests data from the sensors, blocks for 2 seconds to allow sensor data to come in.
 void serverCOMFORT::dataRequest() {
     cout << "Gathering sensor data..." << endl;
@@ -266,13 +281,16 @@ void serverCOMFORT::dataRequest() {
 
         vector<uint8_t> cipherText;
 
-        int cipherSize = Encrypt(sendBuff, cipherText, it->shared, iv, sizeof(sendBuff));
+        Encrypt(sendBuff, cipherText, it->shared, iv, sizeof(sendBuff));
         int retSize = write(it->connectionFD, &cipherText[0],cipherText.size());
+		if (retSize != (int)cipherText.size()) {
+			cout << "Error in data Request" << endl;
+		}
     }
 
 
     chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
-    while (chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - t1).count() < 2000);
+    while (chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - t1).count() < RECV_WAIT);
 
 
     // Get stuff back
@@ -282,22 +300,46 @@ void serverCOMFORT::dataRequest() {
         }
         const string dataResponse = "Response:";
         CryptoPP::byte recvBuff[it->data.size() + dataResponse.length() + sizeof(uint32_t) + sizeof(uint32_t) + 16];
-        int recvSize = read(it->connectionFD, recvBuff, sizeof(recvBuff));
+		fd_set read_fds;
+		FD_ZERO(&read_fds);
+		FD_SET(it->connectionFD, &read_fds);
+		timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+
+		int selectStatus = select(it->connectionFD+1, &read_fds, NULL, NULL, &tv);
+		int recvSize = 0;
+		switch (selectStatus) {
+		case -1:
+			cout << "Oh no..." << endl;
+			it->connected = false;
+			continue;
+
+		case 0:
+			cout << "Nothing to read..." << endl;
+			it->connected = false;
+			continue;
+
+		default:
+			recvSize = read(it->connectionFD, recvBuff, sizeof(recvBuff));
+			break;
+		}
+        
 
         if (recvSize == 0) {
             it->connected = false;
-            return;
+            continue;
         }
 
         vector<uint8_t> plainText;
         int plainSize = Decrypt(recvBuff, plainText, it->shared, iv, recvSize);
-        if (plainSize != sizeof(recvBuff) - 16) {
+        if (plainSize != (int)sizeof(recvBuff) - 16) {
             cout << "Node " << it->ID << " sent incorrect packet size." << endl;
             it->connected = false;
             continue;
         }
         if (memcmp(&plainText[0], dataResponse.c_str(), dataResponse.length())) {
-            cout << "Node " << it->ID << " sent incorrect Identifier." << endl;
+            cout << "Node " << it->ID << " sent incorrect DataResponse Identifier." << endl;
             it->connected = false;
             continue;
         }
@@ -305,6 +347,7 @@ void serverCOMFORT::dataRequest() {
         if (*(uint32_t *)&plainText[dataResponse.length()+it->data.size()] != it->counter) {
             cout << "Counter " << *(uint32_t *)&plainText[dataResponse.length()] << "does not match " << it->counter << endl;
             cout << "Disabling node " << it->ID << endl;
+			continue;
         }
 
         uint32_t clockTime = *(uint32_t *)&plainText[dataResponse.length() + it->data.size() + sizeof(uint32_t)];
@@ -320,7 +363,7 @@ void serverCOMFORT::dataRequest() {
         time_t RTCTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
         uint32_t difference = (unixTime > RTCTime) ? unixTime - RTCTime : RTCTime - unixTime;
-        if (difference > 32) {
+        if (difference > 5) {
             cout << "Node " << it->ID << " sent invalid timestamp." << endl;
             it->connected = false;
             continue;
@@ -351,21 +394,144 @@ void serverCOMFORT::dataRequest() {
         }
     }
     inData = inDataBuf;
+	inData_received = true;
 }
 
+const int SEND_WAIT = 2000;
+// TODO: Make select() work
 void serverCOMFORT::sendData() {
     for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
-        if (it->type != nodeTypeDef::Output) {
-            return;
+        if (it->type != nodeTypeDef::Output || it->connected == false) {
+			cout << "Skipping node " << it->ID << " for output." << endl;
+            continue;
         }
-        const string outputData = "Output Data:";
-        CryptoPP::byte sendBuff[3];
+		uint8_t RTCPlain[6];
+		time_t RTCTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
+		tm * RTCtm = localtime(&RTCTime);
+		cout << asctime(RTCtm) << endl;
+		RTCPlain[0] = (uint8_t)RTCtm->tm_mday;
+		RTCPlain[1] = (uint8_t)RTCtm->tm_mon + 1;
+		RTCPlain[2] = (uint8_t)RTCtm->tm_year - 116;
+		RTCPlain[3] = (uint8_t)RTCtm->tm_hour;
+		RTCPlain[4] = (uint8_t)RTCtm->tm_min;
+		RTCPlain[5] = (uint8_t)RTCtm->tm_sec;
+
+        const string outputData = "Output Data:";
+
+        CryptoPP::byte sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(uint32_t) + sizeof(RTCPlain) + sizeof(outData)];
+		memcpy(sendBuff, UniqueIdentifier.c_str(), UniqueIdentifier.length());
+		memcpy(&sendBuff[UniqueIdentifier.length()], outputData.c_str(), outputData.length());
+		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length()], &outData, sizeof(outData));
+		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(outData)], &(it->counter), sizeof(uint32_t));
+		memcpy(&sendBuff[sizeof(sendBuff) - sizeof(RTCPlain)], RTCPlain, sizeof(RTCPlain));
+
+		vector<uint8_t> cipherText;
+		Encrypt(sendBuff, cipherText, it->shared, iv, sizeof(sendBuff));
+		int retSize = write(it->connectionFD, &cipherText[0], cipherText.size());
+		if (retSize != (int)cipherText.size()) {
+			cout << "Error in data output" << endl;
+		}
+		memcpy(&it->data[0], &outData, it->data.size());
     }
+
+	chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+	while (chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - t1).count() < SEND_WAIT);
+
+	for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
+		if (it->connected == false || it->type != nodeTypeDef::Output) {
+			continue;
+		}
+		const string dataReceived = "DataReceived";
+		CryptoPP::byte recvBuff[UniqueIdentifier.length() + dataReceived.length() + sizeof(uint32_t) + sizeof(uint32_t) + 16];
+		
+		fd_set read_fds;
+		FD_ZERO(&read_fds);
+		FD_SET(it->connectionFD, &read_fds);
+		timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 1;
+
+		int selectStatus = select(it->connectionFD+1, &read_fds, NULL, NULL, &tv);
+		int recvSize = 0;
+		switch (selectStatus) {
+		case -1:
+			cout << "Oh no..." << endl;
+			it->connected = false;
+			continue;
+
+		case 0:
+			cout << "Nothing to read..." << endl;
+			it->connected = false;
+			continue;
+
+		default:
+			recvSize = read(it->connectionFD, recvBuff, sizeof(recvBuff));
+			break;
+		}
+
+		if (recvSize == 0) {
+			it->connected = false;
+			return;
+		}
+
+		vector<uint8_t> plainText;
+		int plainSize = Decrypt(recvBuff, plainText, it->shared, iv, recvSize);
+		if (plainSize != (int)sizeof(recvBuff) - 16) {
+			cout << "Node " << it->ID << " sent incorrect packet size." << endl;
+			it->connected = false;
+			continue;
+		}
+
+		// Check Unique Identifier:
+		if (memcmp(&plainText[0], UniqueIdentifier.c_str(), UniqueIdentifier.length())) {
+			cout << "Node " << it->ID << " sent incorrect Unique Identifier." << endl;
+			it->connected = false;
+			continue;
+		}
+
+		// Check DataReceived:
+		if (memcmp(&plainText[UniqueIdentifier.length()], dataReceived.c_str(), dataReceived.length())) {
+			cout << "Node " << it->ID << " sent incorrect DataReceived Identifier." << endl;
+			it->connected = false;
+			continue;
+		}
+
+		// Check Counter Value:
+		if (*(uint32_t *)&plainText[UniqueIdentifier.length() + dataReceived.length()] != it->counter) {
+			cout << "Counter " << *(uint32_t *)&plainText[UniqueIdentifier.length() + dataReceived.length()] 
+				 << "does not match " << it->counter << endl;
+			cout << "Disabling node " << it->ID << endl;
+			continue;
+		}
+
+		// Timestamp time:
+		uint32_t clockTime = *(uint32_t *)&plainText[UniqueIdentifier.length() + dataReceived.length() + sizeof(uint32_t)];
+		tm tme;
+		tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
+		tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
+		tme.tm_mday = (clockTime >> 17 & 0x1F);
+		tme.tm_hour = (clockTime >> 12 & 0x1F);
+		tme.tm_min = (clockTime >> 6 & 0x3F);
+		tme.tm_sec = (clockTime & 0x3F);
+		time_t unixTime = mktime((tm *)&tme);
+
+		time_t RTCTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
+
+		uint32_t difference = (unixTime > RTCTime) ? unixTime - RTCTime : RTCTime - unixTime;
+		if (difference > 5) {
+			cout << "Node " << it->ID << " sent invalid timestamp." << endl;
+			it->connected = false;
+			continue;
+		}
+		it->counter++;
+		outData_toSend = false;
+	}
 }
 
 void serverCOMFORT::clearNodes() {
     nodeList.clear();
+	cout << "Node List Cleared..." << endl;
 }
 
 void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
@@ -381,11 +547,11 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
     incomingPubKey.BytePtr()[0] = 0x04;
 
     cout << "Server PubKey Key: ";
-    for (int i = 0; i < pubKey.SizeInBytes(); i++) cout << std::hex << "0x" << (int)(pubKey.BytePtr()[i]) << ", ";
+    for (int i = 0; i < (int)pubKey.SizeInBytes(); i++) cout << std::hex << "0x" << (int)(pubKey.BytePtr()[i]) << ", ";
     cout << std::dec << endl;
 
     cout << "PubKey In Key: ";
-    for (int i = 0; i < incomingPubKey.SizeInBytes(); i++) cout << std::hex << "0x" << (int)(incomingPubKey.BytePtr()[i]) << ", ";
+    for (int i = 0; i < (int)incomingPubKey.SizeInBytes(); i++) cout << std::hex << "0x" << (int)(incomingPubKey.BytePtr()[i]) << ", ";
     cout << std::dec << endl;
 
     uint8_t cipherText[SIZE - (dh.PublicKeyLength() - 1)];
@@ -393,16 +559,16 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
     sharedKey = SHA256Hash(sharedKey);
 
     cout << "Shared Key: ";
-    for (int i = 0; i < sharedKey.SizeInBytes(); i++) cout << std::hex << "0x" << (int)(sharedKey.BytePtr()[i]) << ", ";
+    for (int i = 0; i < (int)sharedKey.SizeInBytes(); i++) cout << std::hex << "0x" << (int)(sharedKey.BytePtr()[i]) << ", ";
     cout << std::dec << endl;
 
     cout << "IV: ";
-    for (int i = 0; i < sizeof(iv); i++) cout << std::hex << "0x" << (int)(iv[i]) << ", ";
+    for (int i = 0; i < (int)sizeof(iv); i++) cout << std::hex << "0x" << (int)(iv[i]) << ", ";
     cout << std::dec << endl;
     memcpy(cipherText, &receiveBuf[dh.PublicKeyLength() - 1], sizeof(cipherText));
 
     cout << "Cipher: ";
-    for (int i = 0; i < sizeof(cipherText); i++) cout << std::hex << "0x" << (int)(cipherText[i]) << ", ";
+    for (int i = 0; i < (int)sizeof(cipherText); i++) cout << std::hex << "0x" << (int)(cipherText[i]) << ", ";
     cout << std::dec << endl;
 
     vector<uint8_t> plainText;
@@ -422,7 +588,7 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
 
     uint32_t deviceIP = addr.sin_addr.s_addr;
     cout << "IP ADDR: ";
-    for (int i = 0; i < sizeof(int); i++) cout << (int)((uint8_t *)&deviceIP)[i] << ", ";
+    for (int i = 0; i < (int)sizeof(int); i++) cout << (int)((uint8_t *)&deviceIP)[i] << ", ";
     cout << endl;
 
     string deviceType;
@@ -432,7 +598,6 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
         deviceType.resize(endOfString);
     }
     cout << "Device Type: " << deviceType << endl;
-
     string uniqueIdentAttempt;
     uniqueIdentAttempt.assign((char *)&plainText.data()[8 + 16], UniqueIdentifier.length());
     cout << "Unique Identifier Input: " << uniqueIdentAttempt << endl;
@@ -499,14 +664,14 @@ void serverCOMFORT::printNodeCOMFORT() {
         cout << "ID: " << it->ID << endl;
         cout << "Type: " << it->NodeTypetoString() << endl;
         cout << "IP ADDR: ";
-        for (int i = 0; i < sizeof(int); i++) cout << (int)((uint8_t *)&it->IP)[i] << ", ";
+        for (int i = 0; i < (int)sizeof(int); i++) cout << (int)((uint8_t *)&it->IP)[i] << ", ";
         cout << endl;
         cout << "Port: " << it->TCPConnection.sin_port << endl;
         cout << "Counter: " << it->counter << endl;
         cout << "Connected: " << (it->connected ? "On" : "Off") << endl;
         cout << "TCP File Descriptor: " << it->connectionFD << endl;
         cout << "Shared Key: 0x";
-        for (int i = 0; i < it->shared.SizeInBytes(); i++) cout << std::hex << (int)(it->shared.BytePtr()[i]);
+        for (int i = 0; i < (int)it->shared.SizeInBytes(); i++) cout << std::hex << (int)(it->shared.BytePtr()[i]);
         cout << std::dec << endl;
         cout << "Data: ";
         if (it->type == nodeTypeDef::Occupancy) {
@@ -593,6 +758,10 @@ void serverCOMFORT::cryptoInit() {
     privKey = SecByteBlock(dh.PrivateKeyLength());
     pubKey = SecByteBlock(dh.PublicKeyLength());
     rng.GenerateBlock(iv, CryptoPP::AES::BLOCKSIZE);
+	memset(&inData, 0, sizeof(dataIn));
+	inDataBuf = inData;
+	memset(&outData, 0, sizeof(dataOut));
+	outDataBuf = outData;
 }
 
 void serverCOMFORT::genLocalKeys() {
