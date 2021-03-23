@@ -246,8 +246,6 @@ const int RECV_WAIT = 2000;
 // Requests data from the sensors, blocks for 2 seconds to allow sensor data to come in.
 void serverCOMFORT::dataRequest() {
     cout << "Gathering sensor data..." << endl;
-    // Test recieve inData function to trigger GUI
-    setInData_received(true);
 
     for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
         if (it->connected == false) {
