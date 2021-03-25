@@ -2,7 +2,6 @@
 
 serverCOMFORT::serverCOMFORT(QObject *parent) : QObject(parent)
 {
-
 }
 
 serverCOMFORT::~serverCOMFORT()
@@ -10,6 +9,7 @@ serverCOMFORT::~serverCOMFORT()
 
 }
 
+// Call this function after instancing the object in a thread (should be thread safe)
 void serverCOMFORT::serverOperation() {
     if (setNetworkInterface() == false) return;
     cryptoInit();
@@ -25,8 +25,6 @@ void serverCOMFORT::serverOperation() {
         cout << std::hex << "0x" << (int)pubKey[i] << ", ";
     cout << std::dec << endl;
 
-    cout << "Also public key length " << dh.PublicKeyLength() << endl;
-
     // Disabling this will end the server operation
 	active = true;
     while (active) {
@@ -41,6 +39,7 @@ void serverCOMFORT::serverOperation() {
             //Authentication flag:
             if (authenticate) {
                 authentication();
+				ms = 0;
                 authenticate = false;
             }
 
@@ -57,16 +56,16 @@ void serverCOMFORT::serverOperation() {
 			}
 
             ms = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - t1).count();
-            if (last_print_time < (ms/1000)) {
-                cout << ms << endl;
-                last_print_time = (ms/1000);
-            }
+            //if (last_print_time < (ms/1000)) {
+            //    cout << ms << endl;
+            //    last_print_time = (ms/1000);
+            //}
         }
 
         cout << "Timer done." << endl;
         dataRequest();
-		//outData.output = 420.69;
-		//sendData();
+		outData.output = 120.34;
+		sendData();
         printNodeCOMFORT();
     }
     return;
@@ -147,7 +146,7 @@ void serverCOMFORT::authentication() {
         // Broadcast tick:
         if (last_broadcast_activation < (ms/2000)) {
 
-            // broadcast here
+            // Checksum
             uint8_t checkSum[16];
             memset(checkSum, 0, sizeof(checkSum));
             for (int i = 0; i < (int)UniqueIdentifier.length(); i++)
@@ -160,6 +159,7 @@ void serverCOMFORT::authentication() {
             }
 
 
+			// Populate broadcast message
             CryptoPP::byte broadcastMessage[UniqueIdentifier.length() + pubKey.SizeInBytes()-1 + sizeof(checkSum) + sizeof(iv)];
             memcpy(&broadcastMessage, UniqueIdentifier.c_str(), UniqueIdentifier.length());
             memcpy(&broadcastMessage[UniqueIdentifier.length()], &(pubKey.BytePtr()[1]), pubKey.SizeInBytes()-1);
@@ -171,7 +171,7 @@ void serverCOMFORT::authentication() {
             //for (int i = 0; i < sizeof(broadcastMessage); i++) cout << std::hex << "0x" << (int)broadcastMessage[i] << ", ";
             //cout << std::dec << endl;
 
-            // Time to learn how to send this out... yay....
+			// UDP send
             int sentSize = sendto(udpFDSend, broadcastMessage, sizeof(broadcastMessage), MSG_CONFIRM, (sockaddr *)&broadcast, sizeof(broadcast));
             if (sentSize != (int)sizeof(broadcastMessage)) {
                 cout << "Warning: Broadcast message not fully sent. Size " << sentSize << endl;
@@ -207,6 +207,7 @@ void serverCOMFORT::authentication() {
                     it->connectionFD = newtcpFD;
                     it->TCPConnection = cli_addr;
 
+					// Timestamping
                     uint8_t RTCPlain[6];
                     time_t RTCTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
@@ -243,6 +244,7 @@ void serverCOMFORT::authentication() {
 }
 
 const int RECV_WAIT = 2000;
+
 // Requests data from the sensors, blocks for 2 seconds to allow sensor data to come in.
 void serverCOMFORT::dataRequest() {
     cout << "Gathering sensor data..." << endl;
@@ -391,12 +393,15 @@ void serverCOMFORT::dataRequest() {
             break;
         }
     }
-    inData = inDataBuf;
+    //inData = inDataBuf;
+	buffIn.SetPrivateBuffer(inDataBuf);
+	buffIn.RotatePrivateBuffer();
 	setInData_received(true);
 }
 
 const int SEND_WAIT = 2000;
-// TODO: Make select() work
+
+// Sends data that's in the triple buffer
 void serverCOMFORT::sendData() {
     for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
         if (it->type != nodeTypeDef::Output || it->connected == false) {
@@ -436,6 +441,7 @@ void serverCOMFORT::sendData() {
 	chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
 	while (chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - t1).count() < SEND_WAIT);
 
+	// Receive a confirmation back
 	for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
 		if (it->connected == false || it->type != nodeTypeDef::Output) {
 			continue;
@@ -532,6 +538,7 @@ void serverCOMFORT::clearNodes() {
 	cout << "Node List Cleared..." << endl;
 }
 
+// Function for authentication process
 void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
     if (receiveBufSize != 128) {
         cout << "Wrong return packet." << endl;
@@ -653,6 +660,7 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
     cout << "Node has been notified to start TCP communication." << endl;
 }
 
+// Simple print all nodes in nodeList
 void serverCOMFORT::printNodeCOMFORT() {
     int num = 0;
     cout << "---------------------------------" << endl;
@@ -727,6 +735,7 @@ int serverCOMFORT::Decrypt(uint8_t* cipherText, vector<uint8_t>& plainText, SecB
     return ready;
 }
 
+// Hash function
 SecByteBlock serverCOMFORT::SHA256Hash(SecByteBlock secretKey) {
     SHA256 hash;
     SecByteBlock key(SHA256::DIGESTSIZE);
@@ -734,6 +743,7 @@ SecByteBlock serverCOMFORT::SHA256Hash(SecByteBlock secretKey) {
     return key;
 }
 
+// Sets network interface settings to the IP and broadcast address of the connection to LAN
 bool serverCOMFORT::setNetworkInterface() {
     struct ifaddrs *ifap, *ifa;
     getifaddrs(&ifap);
@@ -749,6 +759,7 @@ bool serverCOMFORT::setNetworkInterface() {
     return false;
 }
 
+// Initializes objects and cryptography engines
 void serverCOMFORT::cryptoInit() {
     nodeList.reserve(8);
     CURVE = secp256r1();
@@ -756,16 +767,23 @@ void serverCOMFORT::cryptoInit() {
     privKey = SecByteBlock(dh.PrivateKeyLength());
     pubKey = SecByteBlock(dh.PublicKeyLength());
     rng.GenerateBlock(iv, CryptoPP::AES::BLOCKSIZE);
+
 	memset(&inData, 0, sizeof(dataIn));
 	inDataBuf = inData;
 	memset(&outData, 0, sizeof(dataOut));
 	outDataBuf = outData;
+
+	buffIn = TripleBuffer<dataIn>(inData, inData, inData);
+	buffOut = TripleBuffer<dataOut>(outData, outData, outData);
+
 }
 
+// Generates local keys
 void serverCOMFORT::genLocalKeys() {
     dh.GenerateKeyPair(rng, privKey, pubKey);
 }
 
+// Generates shared key
 bool serverCOMFORT::genSharedKey(SecByteBlock &pKey, SecByteBlock &sharedKey) {
     //SecByteBlock inPubKey = SecByteBlock(pKey,dh.PublicKeyLength());
     return dh.Agree(sharedKey, privKey, pKey);

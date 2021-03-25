@@ -22,6 +22,7 @@
 #include <cstring>
 #include <ctime>
 #include "nodecomfort.h"
+#include "TripleBuffer.h"
 
 // Actual Pi includes
 #include "./cryptopp850/aes.h"
@@ -90,6 +91,10 @@ public:
     // Sensor data public members:
     dataIn inData;
     dataIn inDataBuf;
+
+	TripleBuffer<dataIn> buffIn;
+	TripleBuffer<dataOut> buffOut;
+
     dataOut outData;
     dataOut outDataBuf;
 
