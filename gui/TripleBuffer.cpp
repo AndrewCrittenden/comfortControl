@@ -41,9 +41,10 @@ TripleBuffer<T>& TripleBuffer<T>::operator=(const TripleBuffer<T>& other) {
         this->publicBuffer = other.publicBuffer;
         this->nextPublicBuffer = other.nextPublicBuffer;
         this->privateBuffer = other.privateBuffer;
-        this->switchingBuffers = other.switchingBuffers;
-        this->nextBufferRead = other.nextBufferRead;
+        this->switchingBuffers = other.switchingBuffers.load();
+        this->nextBufferRead = other.nextBufferRead.load();
     }
+    return *this;
 }
 
 // this will get the value of the public buffer
