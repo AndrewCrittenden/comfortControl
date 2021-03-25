@@ -8,9 +8,9 @@
 // this constructor initializes the buffers with the default value of the type parameter
 template <typename T>
 TripleBuffer<T>::TripleBuffer() {
-    this->buffers[0] = firstBuffer;
-    this->buffers[1] = secondBuffer;
-    this->buffers[2] = thirdBuffer;
+    this->buffers[0] = T();
+    this->buffers[1] = T();
+    this->buffers[2] = T();
     publicBuffer = 1;
     nextPublicBuffer = 2;
     privateBuffer = 3;
