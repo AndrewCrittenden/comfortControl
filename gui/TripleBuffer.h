@@ -15,6 +15,9 @@ public:
 
     // this constructor initializes the buffers with the given values
     TripleBuffer(T firstBuffer, T secondBuffer, T thirdBuffer);
+    
+    // explicit copy assignment operator, as required by QT
+    TripleBuffer& operator=(const TripleBuffer& other);
 
     // this will get the value of the public buffer
     T GetPublicBuffer();
