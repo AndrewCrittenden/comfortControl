@@ -30,6 +30,7 @@ public:
     float getOutput();
     bool needsUpdate();
     float doUpdate();
+    float forceUpdate();
     void setInitial(float newTemperature, float newSetpoint, float newOutput = 0);
     void beginAlgorithmLoop();
     std::atomic<bool> exitFlag;
