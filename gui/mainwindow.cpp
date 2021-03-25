@@ -11,14 +11,20 @@
 #include <QThread>
 #include <QTimer>
 #include <QtConcurrent/QtConcurrent>
+#include "TripleBuffer.h"
+#include "servercomfort.h"
 
 using namespace std;
 
 const int MAX_IPC_CHAR = 100;
 const int REFRESH_MEASUREMENTS = 1000; // units milliseconds
+const float initial_air_vol = 0.015; // I don't have the actual length/width/height handy right now
+const float initial_max_cool = -50;
+const float initial_max_heat = 50;
+const float initial_sample_time = 15000;
 
 //MainWindow is the controller used to switch between windows and close the application
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*initial_air_vol*1.8, 1.1111*initial_air_vol*1.8, 740*initial_air_vol*1.8, initial_max_cool, initial_max_heat, initial_sample_time)
 {
     stack = new QStackedWidget;
     home = new HomeWindow;
@@ -55,21 +61,23 @@ void MainWindow::setupWindow(){
     QFuture<void> future = QtConcurrent::run([this] {
         server.serverOperation();
     });
+    controller.setInitial(g_indoorTemp,g_setpoint_temperature);
 }
 
 void MainWindow::refreshMeasurements(){
+    dataIn newData = server.buffIn.GetPublicBuffer();
     server.inData_received = false;
     qDebug("Recieving from wireless");
-    qDebug() << "Server indoor is " << server.inData.indoor;
-    qDebug() << "Server outdoor is " << server.inData.outdoor;
-    qDebug() << "Server relHumidity is " << server.inData.relHumidity;
-    qDebug() << "Server globe is " << server.inData.globe;
-    qDebug() << "Server occupancy is " << server.inData.occupancy;
-    g_indoorTemp = server.inData.indoor;
-    g_outdoorTemp = server.inData.outdoor;
-    g_relHumidity = server.inData.relHumidity;
-    g_globeTemp = server.inData.globe;
-    g_occupancy = server.inData.occupancy;
+    qDebug() << "Server indoor is " << newData.indoor;
+    qDebug() << "Server outdoor is " << newData.outdoor;
+    qDebug() << "Server relHumidity is " << newData.relHumidity;
+    qDebug() << "Server globe is " << newData.globe;
+    qDebug() << "Server occupancy is " << newData.occupancy;
+    g_indoorTemp = newData.indoor;
+    g_outdoorTemp = newData.outdoor;
+    g_relHumidity = newData.relHumidity;
+    g_globeTemp = newData.globe;
+    g_occupancy = newData.occupancy;
     qDebug() << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
     sensors->indoorTemp->display(g_indoorTemp);
     sensors->outdoorTemp->display(g_outdoorTemp);
@@ -82,7 +90,22 @@ void MainWindow::refreshMeasurements(){
        else {
            sensors->occupancy->setText("Vacant");
     }
+    /* TODO fix Joseph's code to call doUpdate
+
+    //call setSetpoint
+    //call setcurentTemperature
+    //doUpdate return output to go to Caleb TODO give to Tyler's wireless
+    qDebug() << controller.getOutput();
+    qDebug() << "See initial PID output here ----------------------------";
+    controller.exitFlag = true; // REQUIRED
+    controlLoop.join(); // REQUIRED
+    //QFuture<void> t1 = QtConcurrent::run(controller, &ControlAlgorithm::beginAlgorithmLoop);
+    */
     IPCSendComfort(g_desiredTemp);
+    controller.setSetpoint(g_setpoint_temperature);
+    controller.setCurrentTemperature(newData.indoor);
+    g_heatCoolOutput = controller.forceUpdate();
+    qDebug() << g_heatCoolOutput;
 }
 
 void MainWindow::IPCRecieveComfort(){

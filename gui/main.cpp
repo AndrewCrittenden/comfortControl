@@ -52,6 +52,9 @@ int main(int argc, char *argv[])
     ControlAlgorithm controller(74*controlled_air_volume, 1.1111*controlled_air_volume, 740*controlled_air_volume, max_cool, max_heat, 15000); // REQUIRED
     controller.setInitial(18.3333,22.2222222222); // REQUIRED
     std::thread controlLoop(&ControlAlgorithm::beginAlgorithmLoop,&controller); // REQUIRED
+    //call setSetpoint
+    //call setcurentTemperature
+    //doUpdate return output to go to Caleb TODO give to Tyler's wireless
     qDebug() << controller.getOutput();
     qDebug() << "See initial PID output here ----------------------------";
     controller.exitFlag = true; // REQUIRED

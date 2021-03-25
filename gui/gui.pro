@@ -24,6 +24,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 CONFIG += c++11
 
+QMAKE_CXXFLAGS += -g
+
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
@@ -33,7 +35,8 @@ SOURCES += \
     ControlAlgorithm.cpp \
     PID.c \
     nodecomfort.cpp \
-    servercomfort.cpp
+    servercomfort.cpp \
+    TripleBuffer.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -44,7 +47,8 @@ HEADERS += \
     ControlAlgorithm.h \
     PID.h \
     nodecomfort.h \
-    servercomfort.h
+    servercomfort.h \
+    TripleBuffer.h
 
 FORMS +=
 
