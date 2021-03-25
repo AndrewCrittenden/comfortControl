@@ -31,6 +31,21 @@ TripleBuffer<T>::TripleBuffer(T firstBuffer, T secondBuffer, T thirdBuffer) {
     nextBufferRead = 0;
 }
 
+// explicit copy assignment operator, as required by QT
+template <typename T>
+TripleBuffer<T>& TripleBuffer<T>::operator=(const TripleBuffer<T>& other) {
+    if (this != &other) {
+        for (int i = 0; i < 3; i++) {
+            this->buffers[i] = other.buffers[i];
+        }
+        this->publicBuffer = other.publicBuffer;
+        this->nextPublicBuffer = other.nextPublicBuffer;
+        this->privateBuffer = other.privateBuffer;
+        this->switchingBuffers = other.switchingBuffers;
+        this->nextBufferRead = other.nextBufferRead;
+    }
+}
+
 // this will get the value of the public buffer
 template <typename T>
 T TripleBuffer<T>::GetPublicBuffer() {
