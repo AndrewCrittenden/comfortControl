@@ -81,6 +81,12 @@ float ControlAlgorithm::doUpdate() {
     }
     return output;
 }
+float ControlAlgorithm::forceUpdate() {
+    while(synchronized&&!mtx.try_lock());
+    pid_compute(&pidctrl);
+    if (synchronized) mtx.unlock();
+    return output;
+}
 void ControlAlgorithm::setInitial(float newTemperature, float newSetpoint, float newOutput) {
     while(synchronized&&!mtx.try_lock());
     input = newTemperature;
