@@ -9,7 +9,7 @@
 #include <SHA256.h>
 
 // 1) Uncomment the type of node you are using
-//#define TEST_SENSOR
+#define TEST_SENSOR
 //#define GLOBE_SENSOR
 //#define REL_HUMIDITY
 //#define INDOOR
@@ -17,23 +17,25 @@
 //#define OCCUPANCY
 //#define OUTPUTNODE
 
-/*
-#define SPIWIFI       SPI  // The SPI port
+
+ #define SPIWIFI       SPI  // The SPI port
 #define SPIWIFI_SS    13   // Chip select pin
 #define ESP32_RESETN  12   // Reset pin
 #define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1 */
+#define ESP32_GPIO0   -1 
 
 
 // 2) Define your pins for the WiFi Module (See comments on each define)
+/* 
 #define SPIWIFI       SPI  // The SPI port
 #define SPIWIFI_SS    9   // Chip select pin
 #define ESP32_RESETN  5   // Reset pin
 #define SPIWIFI_ACK   7   // a.k.a BUSY or READY pin
 #define ESP32_GPIO0   -1 
+*/
 
 // 3) Change DEBUG to 0 when using without SERIAL printouts (i.e. in normal use)
-#define DEBUG 1
+#define DEBUG 0
 
 // 4) Ensure DEVICE_TYPE String is set to be the DEFINED name of your sensor (Caps sensitive, make sure it matches perfectly)
 // Capped at 16 bytes, the rest will get cut off in runtime if you go over
@@ -117,8 +119,9 @@ void setupCOMFORT() {
   
 }
 
-// number of seconds between each running of this function
+// number of SECONDS between each running of this function
 #define LOOP_TIMER 1
+
 // must set LOOP_TIMER for time of which this function should run again
 // optional function which should run regularly
 int onTimerLoop() {
@@ -139,7 +142,7 @@ void onDataEdge() {
 responseData onDataRequest() {
     responseData data;
 
-   // Example: data.test_x = (double)RTC->MODE2.CLOCK.bit.SECOND;
+    //data.temp = (double)RTC->MODE2.CLOCK.bit.SECOND;
   return data;
 }
 
@@ -152,7 +155,6 @@ responseData onDataRequest() {
 // inData contains the received data, as per the struct given above for OUTPUTNODE
 void onDataReceived(responseData inData) {
   // Code for what to do with incoming data here
-
   
   //Serial.print("Received Value: ");
   //Serial.println(inData.powerIn);
@@ -242,10 +244,34 @@ void setup() {
 void loop() {
     unsigned int timerDelay = 0;
     unsigned int lastRunTime = 0;
+    time_t lastRun;
+    uint32_t clockTime = 0;
+    tm tme;
+    
+    clockTime = RTC->MODE2.CLOCK.reg;
+    
+    tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
+    tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
+    tme.tm_mday = (clockTime >> 17 & 0x1F);
+    tme.tm_hour = (clockTime >> 12 & 0x1F);
+    tme.tm_min = (clockTime >> 6 & 0x3F);
+    tme.tm_sec = (clockTime & 0x3F);
+    lastRun = mktime((tm *)&tme);
+        
     onDataEdge();
     #ifdef OUTPUTNODE
       while(!(dataRefreshReceived(Tcp))) {
-        if ((RTC->MODE2.CLOCK.reg - lastRunTime) >= timerDelay*1000) {
+        clockTime = RTC->MODE2.CLOCK.reg;
+        tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
+        tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
+        tme.tm_mday = (clockTime >> 17 & 0x1F);
+        tme.tm_hour = (clockTime >> 12 & 0x1F);
+        tme.tm_min = (clockTime >> 6 & 0x3F);
+        tme.tm_sec = (clockTime & 0x3F);
+        time_t unix = mktime((tm *)&tme);
+        
+        int diff = (lastRun > unix) ? ((int)lastRun - (int)unix) : ((int)unix - (int)lastRun);
+        if (diff >= timerDelay) {
           #if (DEBUG == 1)
              Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
             Serial.print("/");
@@ -263,12 +289,23 @@ void loop() {
           if (timerDelay == 0) {
             timerDelay++;
           }
-          lastRunTime = RTC->MODE2.CLOCK.reg;
+          lastRun = unix;
         }
       }
+      
   #else
     while(!(dataRequestReceived(Tcp))) {
-        if ((RTC->MODE2.CLOCK.reg - lastRunTime) >= timerDelay*1000) {
+        clockTime = RTC->MODE2.CLOCK.reg;
+        tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
+        tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
+        tme.tm_mday = (clockTime >> 17 & 0x1F);
+        tme.tm_hour = (clockTime >> 12 & 0x1F);
+        tme.tm_min = (clockTime >> 6 & 0x3F);
+        tme.tm_sec = (clockTime & 0x3F);
+        time_t unix = mktime((tm *)&tme);
+        
+        int diff = (lastRun > unix) ? ((int)lastRun - (int)unix) : ((int)unix - (int)lastRun);
+        if (diff >= timerDelay) {
           #if (DEBUG == 1)
              Serial.print(RTC->MODE2.CLOCK.bit.MONTH);
             Serial.print("/");
@@ -286,7 +323,7 @@ void loop() {
           if (timerDelay == 0) {
             timerDelay++;
           }
-          lastRunTime = RTC->MODE2.CLOCK.reg;
+          lastRun = unix;
         }
       }
   #endif
@@ -398,10 +435,15 @@ void comfortWiFiSetup(const char * D_ID, const char * inputType, size_t sensorTy
   // Public Key
   Serial.print("Public Key: ");
   for (int i = 0; i < sizeof(nodePubKey); i++) {
+    Serial.print("0x");
     Serial.print(nodePubKey[i], HEX);
-    Serial.print(" ");
+    Serial.print(", ");
   }
     Serial.println("");
+
+
+  //byte testPub[] = {0x5f, 0xab, 0x7d, 0x6c, 0x4e, 0x9d, 0xb8, 0xd7, 0x6b, 0x8c, 0xb, 0x40, 0xc0, 0xa8, 0xec, 0x39, 0x7, 0x77, 0xd7, 0x69, 0x9e, 0x89, 0x9c, 0x74, 0x1d, 0xe1, 0xb5, 0x77, 0x9a, 0x36, 0x6c, 0x40, 0x14, 0xf3, 0x99, 0xae, 0xf2, 0x4c, 0x23, 0x4a, 0xa3, 0x61, 0xff, 0xd8, 0xbe, 0xc1, 0xf3, 0x91, 0x71, 0xa4, 0xca, 0x4a, 0x1c, 0xf, 0x73, 0x93, 0xd9, 0xaa, 0x4e, 0x58, 0x43, 0xeb, 0x51, 0x65 };
+  //uECC_shared_secret(testPub, privateKey, sharedKey, uECC_secp256r1());
   
   WiFi.setPins(SPIWIFI_SS, SPIWIFI_ACK, ESP32_RESETN, ESP32_GPIO0, &SPIWIFI);
   if (WiFi.status() == WL_NO_MODULE) {
@@ -558,6 +600,7 @@ void authenticate() {
     for (int i = 0; i < sizeof(UniqueIdentifier) - 1; i++) {
       Serial.print(packetBuffer[i], HEX);
     }
+    Serial.println();
     Serial.print("Unique Identifier correct, size:  ");
     Serial.println(sizeof(UniqueIdentifier));
   }
@@ -592,6 +635,7 @@ void authenticate() {
     for (int i = 0; i < sizeof(checkSum); i++) {
       Serial.print(packetBuffer[sizeof(UniqueIdentifier) - 1 + sizeof(publicKey) + i], HEX);
     }
+    while(true);
   }
   else {
     Serial.println("Checksum complete...");
@@ -620,7 +664,8 @@ void authenticate() {
   // Copy publicKey in
   byte plaintextIn[sizeof(deviceID) + sizeof(sensorType) + sizeof(UniqueIdentifier) - 1 + sizeof(counter)];
   byte returnTransmission[sizeof(nodePubKey) + (sizeof(plaintextIn)/16+1)*16];
-  
+  Serial.print("Size of transmission is ");
+  Serial.print(sizeof(returnTransmission));
   memcpy(returnTransmission, nodePubKey, sizeof(nodePubKey));
   // Encrypt plaintext and append to returnTransmission
 
@@ -666,6 +711,12 @@ void authenticate() {
   for (int i = 0; i < sizeof(plaintextIn); i++) {
     Serial.print(" ");
     Serial.print(plaintextIn[i],HEX);
+  }
+  Serial.println();
+  Serial.print("Cipher:");
+  for (int i = 0; i < returnSize; i++) {
+    Serial.print(" ");
+    Serial.print(returnTransmission[sizeof(nodePubKey)+i],HEX);
   }
   Serial.println();
   Udp.beginPacket(serverIP,outwardPort);
