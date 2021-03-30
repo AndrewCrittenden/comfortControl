@@ -1,4 +1,4 @@
-//Code for Sensior Design tempertue and occupancy sensors
+//Code for Sensior Design temperature
 //Cameron Wallace
 const int sens = 14;
 double Room_temp = 298.15;
