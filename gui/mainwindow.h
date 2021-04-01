@@ -33,6 +33,7 @@ signals:
     void exitApp();
 
 public slots:
+    void updateGatherFreq(int f);
     void setWindow(QWidget *w);
     void refreshMeasurements();
     void IPCRecieveComfort();

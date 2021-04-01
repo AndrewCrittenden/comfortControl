@@ -121,7 +121,7 @@ public:
     vector<nodeCOMFORT> nodeList;
 
     // Flags for server control
-    volatile int gatherFrequency = 20000;
+    volatile int gatherFrequency;
     volatile bool inData_received = false;
     volatile bool sensorsReady = false;
     volatile bool outData_toSend = false;

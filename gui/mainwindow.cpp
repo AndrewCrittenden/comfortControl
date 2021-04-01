@@ -49,6 +49,8 @@ void MainWindow::setupWindow(){
     QObject::connect(home->exitButton, &QPushButton::clicked, [=] { stack->close(); });
     QObject::connect(settings->authenticateButton, &QPushButton::clicked, [=] { server.authenticate = true; });
     QObject::connect(settings->clearNodeButton, &QPushButton::clicked, [=] { server.clearNode = true; });
+    server.gatherFrequency = 20000;
+    QObject::connect(settings->gatherFreqSlider, &QSlider::valueChanged, this, &MainWindow::updateGatherFreq);
     //Refresh measurement's from serverCOMFORT
     QObject::connect(&server, &serverCOMFORT::inData_receivedChanged, this, &MainWindow::refreshMeasurements);
     //QObject::connect(&server, &serverCOMFORT::sensorsReadyChanged, this, &MainWindow::refreshMeasurements);
@@ -73,6 +75,13 @@ void MainWindow::setupWindow(){
         output << "Timestamp, Indoor Temperature (F), Outdoor Temperature (F), Relative Humidity (%), Globe Temperature(F), Occupancy, PMV, Setpoint Temperature (F), Desired Temperature (F), Activity Level, Appliance Wattage (W)\n";
     }
     data.close();
+}
+
+void MainWindow::updateGatherFreq(int f){
+    QTime t(0, 0, 0);
+    t = t.addSecs(f);
+    settings->gatherFreqDsp->display(t.toString("m:ss"));
+    server.gatherFrequency = f*1000;
 }
 
 void MainWindow::refreshMeasurements(){
@@ -101,17 +110,6 @@ void MainWindow::refreshMeasurements(){
        else {
            sensors->occupancy->setText("Vacant");
     }
-    /* TODO fix Joseph's code to call doUpdate
-
-    //call setSetpoint
-    //call setcurentTemperature
-    //doUpdate return output to go to Caleb TODO give to Tyler's wireless
-    qDebug() << controller.getOutput();
-    qDebug() << "See initial PID output here ----------------------------";
-    controller.exitFlag = true; // REQUIRED
-    controlLoop.join(); // REQUIRED
-    //QFuture<void> t1 = QtConcurrent::run(controller, &ControlAlgorithm::beginAlgorithmLoop);
-    */
     if(server.sensorsReady){
         IPCSendComfort(g_desiredTemp);
         controller.setSetpoint(g_setpoint_temperature);

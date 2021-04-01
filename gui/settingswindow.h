@@ -6,6 +6,8 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QSlider>
+#include <QLCDNumber>
+#include <QTime>
 
 class settingswindow : public QWidget
 {
@@ -16,6 +18,7 @@ public:
     QPushButton *authenticateButton;
     QPushButton *clearNodeButton;
     QSlider *gatherFreqSlider;
+    QLCDNumber *gatherFreqDsp;
 
 private:
     QGridLayout *layout;

@@ -9,6 +9,8 @@
 #include <QDebug>
 #include <QSignalMapper>
 #include <QComboBox>
+#include <QTime>
+#include <QTimer>
 
 class HomeWindow : public QWidget
 {
@@ -24,9 +26,8 @@ public:
 private:
     QGridLayout *layout;
     QLCDNumber *desiredTemp;
-
-signals:
-    int sensorsButtonPressed();
+    QLCDNumber *currentTime;
+    QTimer *updateClock;
 
 public slots:
     void activityChanged(QString value);
