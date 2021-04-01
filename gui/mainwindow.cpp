@@ -11,6 +11,9 @@
 #include <QThread>
 #include <QTimer>
 #include <QtConcurrent/QtConcurrent>
+#include <QFile>
+#include <QTextStream>
+#include <QDateTime>
 #include "TripleBuffer.h"
 #include "servercomfort.h"
 
@@ -48,6 +51,8 @@ void MainWindow::setupWindow(){
     QObject::connect(settings->clearNodeButton, &QPushButton::clicked, [=] { server.clearNode = true; });
     //Refresh measurement's from serverCOMFORT
     QObject::connect(&server, &serverCOMFORT::inData_receivedChanged, this, &MainWindow::refreshMeasurements);
+    //QObject::connect(&server, &serverCOMFORT::sensorsReadyChanged, this, &MainWindow::refreshMeasurements);
+
     //QTimer *sensorTimer = new QTimer(this);
     //QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::refreshMeasurements);
     //sensorTimer->start(REFRESH_MEASUREMENTS);
@@ -62,6 +67,12 @@ void MainWindow::setupWindow(){
         server.serverOperation();
     });
     controller.setInitial(g_indoorTemp,g_setpoint_temperature);
+    QFile data("/home/pi/WA/comfortControl/gui/data.csv");
+    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
+        QTextStream output(&data);
+        output << "Timestamp, Indoor Temperature (F), Outdoor Temperature (F), Relative Humidity (%), Globe Temperature(F), Occupancy, PMV, Setpoint Temperature (F), Desired Temperature (F), Activity Level, Appliance Wattage (W)\n";
+    }
+    data.close();
 }
 
 void MainWindow::refreshMeasurements(){
@@ -78,7 +89,7 @@ void MainWindow::refreshMeasurements(){
     g_relHumidity = newData.relHumidity;
     g_globeTemp = newData.globe;
     g_occupancy = newData.occupancy;
-    qDebug() << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
+    qDebug() << g_setpoint_temperature << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
     sensors->indoorTemp->display(g_indoorTemp);
     sensors->outdoorTemp->display(g_outdoorTemp);
     sensors->relHumidity->display(g_relHumidity);
@@ -101,11 +112,22 @@ void MainWindow::refreshMeasurements(){
     controlLoop.join(); // REQUIRED
     //QFuture<void> t1 = QtConcurrent::run(controller, &ControlAlgorithm::beginAlgorithmLoop);
     */
-    IPCSendComfort(g_desiredTemp);
-    controller.setSetpoint(g_setpoint_temperature);
-    controller.setCurrentTemperature(newData.indoor);
-    g_heatCoolOutput = controller.forceUpdate();
-    qDebug() << g_heatCoolOutput;
+    if(server.sensorsReady){
+        IPCSendComfort(g_desiredTemp);
+        controller.setSetpoint(g_setpoint_temperature);
+        controller.setCurrentTemperature(newData.indoor);
+        g_heatCoolOutput = controller.forceUpdate();
+        qDebug() << g_heatCoolOutput;
+        //Write data to csv file
+        QDateTime now = QDateTime::currentDateTimeUtc();
+        QFile data("/home/pi/WA/comfortControl/gui/data.csv");
+        if (data.open(QFile::WriteOnly | QFile::Truncate | QIODevice::Append)) {
+            QTextStream output(&data);
+            output << now.toString() << "," << g_indoorTemp << "," << g_outdoorTemp << "," << g_relHumidity << "," << g_globeTemp << "," << g_occupancy << "," << g_pmv << "," << g_setpoint_temperature << "," << g_desiredTemp << "," << g_activityLevel.c_str() << "," << g_heatCoolOutput << "\n";
+        }
+        data.close();
+    }
+
 }
 
 void MainWindow::IPCRecieveComfort(){

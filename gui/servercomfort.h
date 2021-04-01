@@ -66,6 +66,14 @@ struct dataIn {
     double relHumidity;
 };
 
+struct sensorReady {
+    bool occupancy;
+    bool indoor;
+    bool outdoor;
+    bool globe;
+    bool relHumidity;
+};
+
 struct dataOut {
     double output;
 };
@@ -87,6 +95,7 @@ public:
     void clearNodes();
     void authProcess(uint8_t * receiveBuf, size_t receiveBufSize);
     void printNodeCOMFORT();
+    void checkSensorReady();
 
     // Sensor data public members:
     dataIn inData;
@@ -97,6 +106,7 @@ public:
 
     dataOut outData;
     dataOut outDataBuf;
+    sensorReady sensorStatus;
 
     // Socket data and information:
     int udpFDSend;
@@ -111,8 +121,9 @@ public:
     vector<nodeCOMFORT> nodeList;
 
     // Flags for server control
-    volatile int gatherFrequency = 60000;
+    volatile int gatherFrequency = 20000;
     volatile bool inData_received = false;
+    volatile bool sensorsReady = false;
     volatile bool outData_toSend = false;
     volatile bool active = true;
     volatile bool authenticate = false;
@@ -120,9 +131,12 @@ public:
 
 signals:
     void inData_receivedChanged(bool value);
+    void sensorsReadyChanged(bool value);
 
 public slots:
     void setInData_received(bool value);
+    void setSensorsReady(bool value);
+
 
 private:
     // AES Functions

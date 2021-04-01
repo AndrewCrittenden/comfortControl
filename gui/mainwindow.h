@@ -28,9 +28,6 @@ private:
     SensorsWindow *sensors;
     settingswindow *settings;
     ControlAlgorithm controller;
-    static constexpr float controlled_air_volume = 0.015; // I don't have the actual length/width/height handy right now
-    static constexpr float max_cool = -2500;
-    static constexpr float max_heat = 2500;
 
 signals:
     void exitApp();

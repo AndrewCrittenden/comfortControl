@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     g_activityLevel = "resting";
     //Start PID thread
     //TODO test that the PID thread is working
+    /*
     float controlled_air_volume = 0.015; // I don't have the actual length/width/height handy right now
     const float max_cool = -2500;
     const float max_heat = 2500;
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
     controller.exitFlag = true; // REQUIRED
     controlLoop.join(); // REQUIRED
     //QFuture<void> t1 = QtConcurrent::run(controller, &ControlAlgorithm::beginAlgorithmLoop);
+    */
     //Start comfortAnalysis process
     QString comfortAnalysisPath = "/home/pi/WA/comfortControl/comfortCode/comfortAnalysis3152021.py";
     QProcess *comfortAnalysis = new QProcess;

@@ -33,7 +33,7 @@ void serverCOMFORT::serverOperation() {
         // Check if authentication bool is pressed:
         chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
         int ms = 0;
-        int last_print_time = 0;
+        //int last_print_time = 0;
         while (ms < gatherFrequency) {
 
             //Authentication flag:
@@ -63,8 +63,10 @@ void serverCOMFORT::serverOperation() {
         }
 
         cout << "Timer done." << endl;
+
+        checkSensorReady();
         dataRequest();
-		outData.output = 120.34;
+		outData.output = 10.34;
 		sendData();
         printNodeCOMFORT();
     }
@@ -313,10 +315,50 @@ void serverCOMFORT::dataRequest() {
 		case -1:
 			cout << "Oh no..." << endl;
 			it->connected = false;
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    sensorStatus.occupancy = false;
+                break;
+                case nodeTypeDef::Indoor:
+                    sensorStatus.indoor = false;
+                break;
+                case nodeTypeDef::Outdoor:
+                    sensorStatus.outdoor = false;
+                break;
+                case nodeTypeDef::Globe:
+                    sensorStatus.globe = false;
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    sensorStatus.relHumidity = false;
+                break;
+                default:
+
+                break;
+            }
 			continue;
 
 		case 0:
-			cout << "Nothing to read..." << endl;
+            cout << "Nothing to read..." << it->ID << "..." << endl;
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    sensorStatus.occupancy = false;
+                break;
+                case nodeTypeDef::Indoor:
+                    sensorStatus.indoor = false;
+                break;
+                case nodeTypeDef::Outdoor:
+                    sensorStatus.outdoor = false;
+                break;
+                case nodeTypeDef::Globe:
+                    sensorStatus.globe = false;
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    sensorStatus.relHumidity = false;
+                break;
+                default:
+
+                break;
+            }
 			it->connected = false;
 			continue;
 
@@ -327,6 +369,26 @@ void serverCOMFORT::dataRequest() {
         
 
         if (recvSize == 0) {
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    sensorStatus.occupancy = false;
+                break;
+                case nodeTypeDef::Indoor:
+                    sensorStatus.indoor = false;
+                break;
+                case nodeTypeDef::Outdoor:
+                    sensorStatus.outdoor = false;
+                break;
+                case nodeTypeDef::Globe:
+                    sensorStatus.globe = false;
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    sensorStatus.relHumidity = false;
+                break;
+                default:
+
+                break;
+            }
             it->connected = false;
             continue;
         }
@@ -335,11 +397,51 @@ void serverCOMFORT::dataRequest() {
         int plainSize = Decrypt(recvBuff, plainText, it->shared, iv, recvSize);
         if (plainSize != (int)sizeof(recvBuff) - 16) {
             cout << "Node " << it->ID << " sent incorrect packet size." << endl;
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    sensorStatus.occupancy = false;
+                break;
+                case nodeTypeDef::Indoor:
+                    sensorStatus.indoor = false;
+                break;
+                case nodeTypeDef::Outdoor:
+                    sensorStatus.outdoor = false;
+                break;
+                case nodeTypeDef::Globe:
+                    sensorStatus.globe = false;
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    sensorStatus.relHumidity = false;
+                break;
+                default:
+
+                break;
+            }
             it->connected = false;
             continue;
         }
         if (memcmp(&plainText[0], dataResponse.c_str(), dataResponse.length())) {
             cout << "Node " << it->ID << " sent incorrect DataResponse Identifier." << endl;
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    sensorStatus.occupancy = false;
+                break;
+                case nodeTypeDef::Indoor:
+                    sensorStatus.indoor = false;
+                break;
+                case nodeTypeDef::Outdoor:
+                    sensorStatus.outdoor = false;
+                break;
+                case nodeTypeDef::Globe:
+                    sensorStatus.globe = false;
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    sensorStatus.relHumidity = false;
+                break;
+                default:
+
+                break;
+            }
             it->connected = false;
             continue;
         }
@@ -365,6 +467,26 @@ void serverCOMFORT::dataRequest() {
         uint32_t difference = (unixTime > RTCTime) ? unixTime - RTCTime : RTCTime - unixTime;
         if (difference > 5) {
             cout << "Node " << it->ID << " sent invalid timestamp." << endl;
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    sensorStatus.occupancy = false;
+                break;
+                case nodeTypeDef::Indoor:
+                    sensorStatus.indoor = false;
+                break;
+                case nodeTypeDef::Outdoor:
+                    sensorStatus.outdoor = false;
+                break;
+                case nodeTypeDef::Globe:
+                    sensorStatus.globe = false;
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    sensorStatus.relHumidity = false;
+                break;
+                default:
+
+                break;
+            }
             it->connected = false;
             continue;
         }
@@ -538,6 +660,14 @@ void serverCOMFORT::clearNodes() {
 	cout << "Node List Cleared..." << endl;
 }
 
+void serverCOMFORT::checkSensorReady() {
+    sensorsReady = sensorStatus.indoor && sensorStatus.outdoor && sensorStatus.globe && sensorStatus.relHumidity && sensorStatus.occupancy;
+    cout << "sensorsReady = " << (sensorsReady ? "true" : "false") << endl;
+    if (sensorsReady == false) {
+        cout << "Not all sensors are connected." << endl;
+    }
+}
+
 // Function for authentication process
 void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
     if (receiveBufSize != 128) {
@@ -613,7 +743,33 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
     uint32_t deviceCounter = *(uint32_t *)&plainText.data()[8 + 16 + UniqueIdentifier.length()];
     cout << "Counter : " << deviceCounter << endl;
 
+
     bool alreadyExists = false;
+    nodeTypeDef type = nodeCOMFORT::stringToNodeType(deviceType);
+    switch(type) {
+        case nodeTypeDef::Occupancy:
+            sensorStatus.occupancy = true;
+        break;
+        case nodeTypeDef::Indoor:
+            sensorStatus.indoor = true;
+        break;
+        case nodeTypeDef::Outdoor:
+            sensorStatus.outdoor = true;
+        break;
+        case nodeTypeDef::Globe:
+            sensorStatus.globe = true;
+       break;
+        case nodeTypeDef::Rel_Humidity:
+            sensorStatus.relHumidity = true;
+        break;
+        case nodeTypeDef::Error:
+            cout << "Type does not exist... cancelling." << endl;
+            return;
+        default:
+
+        break;
+    }
+
     // Scan to ensure these nodes don't already exist:
     for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
         if (it->IP == deviceIP) {
@@ -629,6 +785,7 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
             cout << "ID already exists... updating IP of node." << endl;
             it->connected = false;
             it->IP = deviceIP;
+            it->type = type;
             it->shared = sharedKey;
             it->counter = deviceCounter;
             alreadyExists = true;
@@ -636,9 +793,9 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
         }
     }
 
+
     // Add a new node to the list
     if (!alreadyExists) {
-        nodeTypeDef type = nodeCOMFORT::stringToNodeType(deviceType);
         if (type == nodeTypeDef::Error) {
             cout << "Type does not exist... cancelling." << endl;
             return;
@@ -695,6 +852,14 @@ void serverCOMFORT::setInData_received(bool value)
     inData_received = value;
     if (inData_received) {
         emit inData_receivedChanged(inData_received);
+    }
+}
+
+void serverCOMFORT::setSensorsReady(bool value)
+{
+    sensorsReady = value;
+    if (sensorsReady) {
+        emit inData_receivedChanged(sensorsReady);
     }
 }
 
@@ -772,6 +937,8 @@ void serverCOMFORT::cryptoInit() {
 	inDataBuf = inData;
 	memset(&outData, 0, sizeof(dataOut));
 	outDataBuf = outData;
+    memset(&sensorStatus,0,sizeof(sensorReady));
+    sensorsReady = false;
 
 	buffIn = TripleBuffer<dataIn>(inData, inData, inData);
 	buffOut = TripleBuffer<dataOut>(outData, outData, outData);
