@@ -5,7 +5,7 @@ double Room_temp = 298.15;
 double Resistor_temp = 100000;
 double beta = 3950;
 double rThermistor = 0;
-double Balance_res = 100000;
+double Balance_res = 143000;
 int adcSamples[10];
 double adcAvg = 0;
 #include <math.h> //for log()
