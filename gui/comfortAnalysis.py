@@ -107,7 +107,7 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
         icl = 1.0 #clo_typical_ensembles('Typical winter indoor clothing')
 
     #imput from user - recieved from GUI
-    activity = "moderately active" #  "resting", "moderately active", "active"
+    #activity = "moderately active" #  "resting", "moderately active", "active"
     if activity == "resting":
         met = met_typical_tasks['Seated, quiet']  #1.0 met range  
     if activity == "moderately active":
