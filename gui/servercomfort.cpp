@@ -66,8 +66,9 @@ void serverCOMFORT::serverOperation() {
 
         checkSensorReady();
         dataRequest();
-		outData.output = 10.34;
-		sendData();
+        //outData.output = 10.34;
+        //cout << "__-______-_____--_-r-23-34gt-43g-hg54h54-h54h-54h-45h-45h4-" << endl;
+
         printNodeCOMFORT();
     }
     return;
@@ -367,7 +368,7 @@ void serverCOMFORT::dataRequest() {
 			break;
 		}
         
-
+        cout << "Received from ID " << it->ID << ", Size " << recvSize << endl;
         if (recvSize == 0) {
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
@@ -394,6 +395,32 @@ void serverCOMFORT::dataRequest() {
         }
 
         vector<uint8_t> plainText;
+        if (recvSize % 16) {
+            cout << "Not a multiple of 16. Disabling Node " << it->ID << endl;
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    sensorStatus.occupancy = false;
+                break;
+                case nodeTypeDef::Indoor:
+                    sensorStatus.indoor = false;
+                break;
+                case nodeTypeDef::Outdoor:
+                    sensorStatus.outdoor = false;
+                break;
+                case nodeTypeDef::Globe:
+                    sensorStatus.globe = false;
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    sensorStatus.relHumidity = false;
+                break;
+                default:
+
+                break;
+            }
+
+            it->connected = false;
+            continue;
+        }
         int plainSize = Decrypt(recvBuff, plainText, it->shared, iv, recvSize);
         if (plainSize != (int)sizeof(recvBuff) - 16) {
             cout << "Node " << it->ID << " sent incorrect packet size." << endl;
@@ -547,7 +574,8 @@ void serverCOMFORT::sendData() {
         CryptoPP::byte sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(uint32_t) + sizeof(RTCPlain) + sizeof(outData)];
 		memcpy(sendBuff, UniqueIdentifier.c_str(), UniqueIdentifier.length());
 		memcpy(&sendBuff[UniqueIdentifier.length()], outputData.c_str(), outputData.length());
-		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length()], &outData, sizeof(outData));
+        dataOut temp = buffOut.GetPublicBuffer();
+        memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length()], &temp, sizeof(outData));
 		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(outData)], &(it->counter), sizeof(uint32_t));
 		memcpy(&sendBuff[sizeof(sendBuff) - sizeof(RTCPlain)], RTCPlain, sizeof(RTCPlain));
 
@@ -602,6 +630,12 @@ void serverCOMFORT::sendData() {
 		}
 
 		vector<uint8_t> plainText;
+        if (recvSize % 16) {
+            cout << "Not a multiple of 16. Disabling Node " << it->ID << endl;
+            it->connected = false;
+            continue;
+        }
+
 		int plainSize = Decrypt(recvBuff, plainText, it->shared, iv, recvSize);
 		if (plainSize != (int)sizeof(recvBuff) - 16) {
 			cout << "Node " << it->ID << " sent incorrect packet size." << endl;

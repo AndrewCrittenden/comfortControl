@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     //QFuture<void> t1 = QtConcurrent::run(controller, &ControlAlgorithm::beginAlgorithmLoop);
     */
     //Start comfortAnalysis process
-    QString comfortAnalysisPath = "/home/pi/WA/comfortControl/comfortCode/comfortAnalysis3152021.py";
+    QString comfortAnalysisPath = "/home/pi/WA/comfortControl/gui/comfortAnalysis.py";
     QProcess *comfortAnalysis = new QProcess;
     comfortAnalysis->start(comfortAnalysisPath);
     //Run GUI application

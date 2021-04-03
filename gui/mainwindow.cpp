@@ -22,8 +22,8 @@ using namespace std;
 const int MAX_IPC_CHAR = 100;
 const int REFRESH_MEASUREMENTS = 1000; // units milliseconds
 const float initial_air_vol = 0.015; // I don't have the actual length/width/height handy right now
-const float initial_max_cool = -50;
-const float initial_max_heat = 50;
+const float initial_max_cool = -5;
+const float initial_max_heat = 5;
 const float initial_sample_time = 15000;
 
 //MainWindow is the controller used to switch between windows and close the application
@@ -96,7 +96,7 @@ void MainWindow::refreshMeasurements(){
     g_indoorTemp = newData.indoor;
     g_outdoorTemp = newData.outdoor;
     g_relHumidity = newData.relHumidity;
-    g_globeTemp = newData.globe;
+    g_globeTemp = newData.globe*9/5+32; //convert to farhenheit
     g_occupancy = newData.occupancy;
     qDebug() << g_setpoint_temperature << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
     sensors->indoorTemp->display(g_indoorTemp);
@@ -116,6 +116,11 @@ void MainWindow::refreshMeasurements(){
         controller.setCurrentTemperature(newData.indoor);
         g_heatCoolOutput = controller.forceUpdate();
         qDebug() << g_heatCoolOutput;
+        dataOut toSend;
+        toSend.output = g_heatCoolOutput;
+        server.buffOut.SetPrivateBuffer(toSend);
+        server.buffOut.RotatePrivateBuffer();
+        server.outData_toSend = true;
         //Write data to csv file
         QDateTime now = QDateTime::currentDateTimeUtc();
         QFile data("/home/pi/WA/comfortControl/gui/data.csv");
@@ -136,9 +141,10 @@ void MainWindow::IPCRecieveComfort(){
     read(fd,buf,MAX_IPC_CHAR);
     QString str = QString(buf);
     QStringList list = str.split(',');
-    //qDebug() << list;
+    qDebug() << list;
     g_pmv = list[0].toFloat();
     g_setpoint_temperature = list[1].toFloat();
+    g_setpoint_temperature = g_desiredTemp;
     sensors->pmv->display(g_pmv);
     sensors->setpointTemp->display(g_setpoint_temperature);
     g_isComfortable = true;

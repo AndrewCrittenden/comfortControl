@@ -1,6 +1,10 @@
 #include "settingswindow.h"
 #include "mainwindow.h"
 
+const int DEFAULT_GATHERFREQ = 10;
+const int MIN_GATHERFREQ = 5;
+const int MAX_GATHERFREQ = 300;
+
 settingswindow::settingswindow(QWidget *parent) : QWidget(parent)
 {
     layout = new QGridLayout(this);
@@ -8,12 +12,12 @@ settingswindow::settingswindow(QWidget *parent) : QWidget(parent)
     clearNodeButton = new QPushButton("Clear Nodes", this);
     backButton = new QPushButton("Back", this);
     gatherFreqSlider = new QSlider(Qt::Horizontal, this);
-    gatherFreqSlider->setRange(20, 300);
-    gatherFreqSlider->setValue(20);
+    gatherFreqSlider->setRange(MIN_GATHERFREQ, MAX_GATHERFREQ);
+    gatherFreqSlider->setValue(DEFAULT_GATHERFREQ);
     gatherFreqSlider->setSingleStep(1);
     gatherFreqLbl = new QLabel("Measurement Resolution",this);
     gatherFreqDsp = new QLCDNumber(this);
-    QTime t(0, 20, 0);
+    QTime t(0, DEFAULT_GATHERFREQ, 0);
     gatherFreqDsp->display(t.toString("m:ss"));
     layout->addWidget(authenticateButton,1,2);
     layout->addWidget(clearNodeButton, 2, 2);
