@@ -34,7 +34,7 @@
 #define ESP32_GPIO0   -1 
 
 // 3) Change DEBUG to 0 when using without SERIAL printouts (i.e. in normal use)
-//#define DEBUG 1
+#define DEBUG 1
 
 // 4) Ensure DEVICE_TYPE String is set to be the DEFINED name of your sensor (Caps sensitive, make sure it matches perfectly)
 // Capped at 16 bytes, the rest will get cut off in runtime if you go over
