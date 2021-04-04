@@ -53,6 +53,12 @@ void MainWindow::setupWindow(){
     QObject::connect(settings->gatherFreqSlider, &QSlider::valueChanged, this, &MainWindow::updateGatherFreq);
     //Refresh measurement's from serverCOMFORT
     QObject::connect(&server, &serverCOMFORT::inData_receivedChanged, this, &MainWindow::refreshMeasurements);
+    QObject::connect(&server, &serverCOMFORT::statusIndoorChanged, this, &MainWindow::indoorStatus);
+    QObject::connect(&server, &serverCOMFORT::statusOutdoorChanged, this, &MainWindow::outdoorStatus);
+    QObject::connect(&server, &serverCOMFORT::statusRelHumChanged, this, &MainWindow::relHumStatus);
+    QObject::connect(&server, &serverCOMFORT::statusGlobeChanged, this, &MainWindow::globeStatus);
+    QObject::connect(&server, &serverCOMFORT::statusOccupancyChanged, this, &MainWindow::occupancyStatus);
+
     //QObject::connect(&server, &serverCOMFORT::sensorsReadyChanged, this, &MainWindow::refreshMeasurements);
 
     //QTimer *sensorTimer = new QTimer(this);
@@ -144,7 +150,6 @@ void MainWindow::IPCRecieveComfort(){
     qDebug() << list;
     g_pmv = list[0].toFloat();
     g_setpoint_temperature = list[1].toFloat();
-    g_setpoint_temperature = g_desiredTemp;
     sensors->pmv->display(g_pmv);
     sensors->setpointTemp->display(g_setpoint_temperature);
     g_isComfortable = true;
@@ -165,6 +170,47 @@ void MainWindow::IPCSendComfort(int dt){
     int fd = open(fifo, O_NONBLOCK|O_RDWR);
     write(fd,dtStr.c_str(),dtStr.length()+1);
     ::close(fd);
+}
+
+void MainWindow::indoorStatus(bool value){
+    if(value){
+        sensors->indoorTempSatusLbl->setText("Connected");
+    }
+    else{
+        sensors->indoorTempSatusLbl->setText("Disconnected");
+    }
+}
+void MainWindow::outdoorStatus(bool value){
+    if(value){
+        sensors->outdoorTempSatusLbl->setText("Connected");
+    }
+    else{
+        sensors->outdoorTempSatusLbl->setText("Disconnected");
+    }
+}
+void MainWindow::relHumStatus(bool value){
+    if(value){
+        sensors->relHumiditySatusLbl->setText("Connected");
+    }
+    else{
+        sensors->relHumiditySatusLbl->setText("Disconnected");
+    }
+}
+void MainWindow::globeStatus(bool value){
+    if(value){
+        sensors->globeTempSatusLbl->setText("Connected");
+    }
+    else{
+        sensors->globeTempSatusLbl->setText("Disconnected");
+    }
+}
+void MainWindow::occupancyStatus(bool value){
+    if(value){
+        sensors->occupancySatusLbl->setText("Connected");
+    }
+    else{
+        sensors->occupancySatusLbl->setText("Disconnected");
+    }
 }
 
 void MainWindow::setWindow(QWidget *w){

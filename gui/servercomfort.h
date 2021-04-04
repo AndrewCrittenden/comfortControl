@@ -131,12 +131,19 @@ public:
 
 signals:
     void inData_receivedChanged(bool value);
-    void sensorsReadyChanged(bool value);
+    void statusIndoorChanged(bool value);
+    void statusOutdoorChanged(bool value);
+    void statusRelHumChanged(bool value);
+    void statusGlobeChanged(bool value);
+    void statusOccupancyChanged(bool value);
 
 public slots:
     void setInData_received(bool value);
-    void setSensorsReady(bool value);
-
+    void setStatusIndoor(bool value);
+    void setStatusOutdoor(bool value);
+    void setStatusRelHum(bool value);
+    void setStatusGlobe(bool value);
+    void setStatusOccupancy(bool value);
 
 private:
     // AES Functions

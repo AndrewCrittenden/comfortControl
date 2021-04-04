@@ -38,6 +38,12 @@ public slots:
     void refreshMeasurements();
     void IPCRecieveComfort();
     void IPCSendComfort(int dt);
+    void indoorStatus(bool value);
+    void outdoorStatus(bool value);
+    void relHumStatus(bool value);
+    void globeStatus(bool value);
+    void occupancyStatus(bool value);
+
 };
 
 #endif // MAINWINDOW_H

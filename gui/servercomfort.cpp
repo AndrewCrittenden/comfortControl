@@ -318,19 +318,19 @@ void serverCOMFORT::dataRequest() {
 			it->connected = false;
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
-                    sensorStatus.occupancy = false;
+                    setStatusOccupancy(false);
                 break;
                 case nodeTypeDef::Indoor:
-                    sensorStatus.indoor = false;
+                    setStatusIndoor(false);
                 break;
                 case nodeTypeDef::Outdoor:
-                    sensorStatus.outdoor = false;
+                    setStatusOutdoor(false);
                 break;
                 case nodeTypeDef::Globe:
-                    sensorStatus.globe = false;
+                    setStatusGlobe(false);
                break;
                 case nodeTypeDef::Rel_Humidity:
-                    sensorStatus.relHumidity = false;
+                    setStatusRelHum(false);
                 break;
                 default:
 
@@ -342,19 +342,19 @@ void serverCOMFORT::dataRequest() {
             cout << "Nothing to read..." << it->ID << "..." << endl;
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
-                    sensorStatus.occupancy = false;
+                    setStatusOccupancy(false);
                 break;
                 case nodeTypeDef::Indoor:
-                    sensorStatus.indoor = false;
+                    setStatusIndoor(false);
                 break;
                 case nodeTypeDef::Outdoor:
-                    sensorStatus.outdoor = false;
+                    setStatusOutdoor(false);
                 break;
                 case nodeTypeDef::Globe:
-                    sensorStatus.globe = false;
+                    setStatusGlobe(false);
                break;
                 case nodeTypeDef::Rel_Humidity:
-                    sensorStatus.relHumidity = false;
+                    setStatusRelHum(false);
                 break;
                 default:
 
@@ -372,19 +372,19 @@ void serverCOMFORT::dataRequest() {
         if (recvSize == 0) {
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
-                    sensorStatus.occupancy = false;
+                    setStatusOccupancy(false);
                 break;
                 case nodeTypeDef::Indoor:
-                    sensorStatus.indoor = false;
+                    setStatusIndoor(false);
                 break;
                 case nodeTypeDef::Outdoor:
-                    sensorStatus.outdoor = false;
+                    setStatusOutdoor(false);
                 break;
                 case nodeTypeDef::Globe:
-                    sensorStatus.globe = false;
+                    setStatusGlobe(false);
                break;
                 case nodeTypeDef::Rel_Humidity:
-                    sensorStatus.relHumidity = false;
+                    setStatusRelHum(false);
                 break;
                 default:
 
@@ -399,19 +399,19 @@ void serverCOMFORT::dataRequest() {
             cout << "Not a multiple of 16. Disabling Node " << it->ID << endl;
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
-                    sensorStatus.occupancy = false;
+                    setStatusOccupancy(false);
                 break;
                 case nodeTypeDef::Indoor:
-                    sensorStatus.indoor = false;
+                    setStatusIndoor(false);
                 break;
                 case nodeTypeDef::Outdoor:
-                    sensorStatus.outdoor = false;
+                    setStatusOutdoor(false);
                 break;
                 case nodeTypeDef::Globe:
-                    sensorStatus.globe = false;
+                    setStatusGlobe(false);
                break;
                 case nodeTypeDef::Rel_Humidity:
-                    sensorStatus.relHumidity = false;
+                    setStatusRelHum(false);
                 break;
                 default:
 
@@ -426,19 +426,19 @@ void serverCOMFORT::dataRequest() {
             cout << "Node " << it->ID << " sent incorrect packet size." << endl;
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
-                    sensorStatus.occupancy = false;
+                    setStatusOccupancy(false);
                 break;
                 case nodeTypeDef::Indoor:
-                    sensorStatus.indoor = false;
+                    setStatusIndoor(false);
                 break;
                 case nodeTypeDef::Outdoor:
-                    sensorStatus.outdoor = false;
+                    setStatusOutdoor(false);
                 break;
                 case nodeTypeDef::Globe:
-                    sensorStatus.globe = false;
+                    setStatusGlobe(false);
                break;
                 case nodeTypeDef::Rel_Humidity:
-                    sensorStatus.relHumidity = false;
+                    setStatusRelHum(false);
                 break;
                 default:
 
@@ -451,19 +451,19 @@ void serverCOMFORT::dataRequest() {
             cout << "Node " << it->ID << " sent incorrect DataResponse Identifier." << endl;
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
-                    sensorStatus.occupancy = false;
+                    setStatusOccupancy(false);
                 break;
                 case nodeTypeDef::Indoor:
-                    sensorStatus.indoor = false;
+                    setStatusIndoor(false);
                 break;
                 case nodeTypeDef::Outdoor:
-                    sensorStatus.outdoor = false;
+                    setStatusOutdoor(false);
                 break;
                 case nodeTypeDef::Globe:
-                    sensorStatus.globe = false;
+                    setStatusGlobe(false);
                break;
                 case nodeTypeDef::Rel_Humidity:
-                    sensorStatus.relHumidity = false;
+                    setStatusRelHum(false);
                 break;
                 default:
 
@@ -496,19 +496,19 @@ void serverCOMFORT::dataRequest() {
             cout << "Node " << it->ID << " sent invalid timestamp." << endl;
             switch(it->type) {
                 case nodeTypeDef::Occupancy:
-                    sensorStatus.occupancy = false;
+                    setStatusOccupancy(false);
                 break;
                 case nodeTypeDef::Indoor:
-                    sensorStatus.indoor = false;
+                    setStatusIndoor(false);
                 break;
                 case nodeTypeDef::Outdoor:
-                    sensorStatus.outdoor = false;
+                    setStatusOutdoor(false);
                 break;
                 case nodeTypeDef::Globe:
-                    sensorStatus.globe = false;
+                    setStatusGlobe(false);
                break;
                 case nodeTypeDef::Rel_Humidity:
-                    sensorStatus.relHumidity = false;
+                    setStatusRelHum(false);
                 break;
                 default:
 
@@ -554,7 +554,7 @@ const int SEND_WAIT = 2000;
 void serverCOMFORT::sendData() {
     for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
         if (it->type != nodeTypeDef::Output || it->connected == false) {
-			cout << "Skipping node " << it->ID << " for output." << endl;
+            //cout << "Skipping node " << it->ID << " for output." << endl;
             continue;
         }
 		uint8_t RTCPlain[6];
@@ -782,19 +782,19 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
     nodeTypeDef type = nodeCOMFORT::stringToNodeType(deviceType);
     switch(type) {
         case nodeTypeDef::Occupancy:
-            sensorStatus.occupancy = true;
+            setStatusOccupancy(true);
         break;
         case nodeTypeDef::Indoor:
-            sensorStatus.indoor = true;
+            setStatusIndoor(true);
         break;
         case nodeTypeDef::Outdoor:
-            sensorStatus.outdoor = true;
+            setStatusOutdoor(true);
         break;
         case nodeTypeDef::Globe:
-            sensorStatus.globe = true;
+            setStatusGlobe(true);
        break;
         case nodeTypeDef::Rel_Humidity:
-            sensorStatus.relHumidity = true;
+            setStatusRelHum(true);
         break;
         case nodeTypeDef::Error:
             cout << "Type does not exist... cancelling." << endl;
@@ -889,12 +889,30 @@ void serverCOMFORT::setInData_received(bool value)
     }
 }
 
-void serverCOMFORT::setSensorsReady(bool value)
+void serverCOMFORT::setStatusIndoor(bool value)
 {
-    sensorsReady = value;
-    if (sensorsReady) {
-        emit inData_receivedChanged(sensorsReady);
-    }
+    sensorStatus.indoor = value;
+    emit statusIndoorChanged(sensorStatus.indoor);
+}
+void serverCOMFORT::setStatusOutdoor(bool value)
+{
+    sensorStatus.outdoor = value;
+    emit statusOutdoorChanged(sensorStatus.outdoor);
+}
+void serverCOMFORT::setStatusRelHum(bool value)
+{
+    sensorStatus.relHumidity = value;
+    emit statusRelHumChanged(sensorStatus.relHumidity);
+}
+void serverCOMFORT::setStatusGlobe(bool value)
+{
+    sensorStatus.globe = value;
+    emit statusGlobeChanged(sensorStatus.globe);
+}
+void serverCOMFORT::setStatusOccupancy(bool value)
+{
+    sensorStatus.occupancy = value;
+    emit statusOccupancyChanged(sensorStatus.occupancy);
 }
 
 // AES Functions

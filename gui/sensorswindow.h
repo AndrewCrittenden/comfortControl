@@ -16,19 +16,22 @@ public:
     QPushButton *backButton;
     QLCDNumber *indoorTemp;
     QLCDNumber *outdoorTemp;
-    QLCDNumber *absHumidity;
     QLCDNumber *relHumidity;
     QLCDNumber *globeTemp;
     QLabel *occupancy;
     QLCDNumber *setpointTemp;
     QLCDNumber *pmv;
     QLCDNumber *heatCoolOutput;
+    QLabel *indoorTempSatusLbl;
+    QLabel *outdoorTempSatusLbl;
+    QLabel *relHumiditySatusLbl;
+    QLabel *globeTempSatusLbl;
+    QLabel *occupancySatusLbl;
 
 private:
     QGridLayout *layout;
     QLabel *indoorTempLbl;
     QLabel *outdoorTempLbl;
-    QLabel *absHumidityLbl;
     QLabel *relHumidityLbl;
     QLabel *globeTempLbl;
     QLabel *occupancyLbl;
