@@ -129,7 +129,7 @@ public:
     volatile bool authenticate = false;
     volatile bool clearNode = false;
 
-signals:
+Q_SIGNALS:
     void inData_receivedChanged(bool value);
     void statusIndoorChanged(bool value);
     void statusOutdoorChanged(bool value);
@@ -137,7 +137,7 @@ signals:
     void statusGlobeChanged(bool value);
     void statusOccupancyChanged(bool value);
 
-public slots:
+public Q_SLOTS:
     void setInData_received(bool value);
     void setStatusIndoor(bool value);
     void setStatusOutdoor(bool value);

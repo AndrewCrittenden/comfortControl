@@ -9,6 +9,7 @@
 #include "measurements.h"
 #include "servercomfort.h"
 #include "ControlAlgorithm.h"
+#include <python3.7m/Python.h>
 
 class MainWindow : public QMainWindow
 {
@@ -28,16 +29,16 @@ private:
     SensorsWindow *sensors;
     settingswindow *settings;
     ControlAlgorithm controller;
+    PyObject *pName, *pModule, *pFunc;
 
-signals:
+Q_SIGNALS:
     void exitApp();
 
-public slots:
+public Q_SLOTS:
     void updateGatherFreq(int f);
+    void updatePMV();
     void setWindow(QWidget *w);
     void refreshMeasurements();
-    void IPCRecieveComfort();
-    void IPCSendComfort(int dt);
     void indoorStatus(bool value);
     void outdoorStatus(bool value);
     void relHumStatus(bool value);

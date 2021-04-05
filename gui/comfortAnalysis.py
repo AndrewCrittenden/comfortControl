@@ -1,18 +1,19 @@
-#!/usr/bin/env python3
-
-# -*- coding: utf-8 -*-
+import time
+initialize_time = time.time()
 
 import os
 import random
 import time
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
+from watchdog.events import FileSystemEventHandler
 from pythermalcomfort.models import pmv_ppd
 from pythermalcomfort.psychrometrics import v_relative
 from pythermalcomfort.psychrometrics import t_mrt
 from pythermalcomfort.utilities import met_typical_tasks
 from pythermalcomfort.models import adaptive_ashrae
 import numpy as np
+import psutil
 
 # Environmental Conditions From Sensor Subsystem 
 
@@ -31,72 +32,24 @@ relHumidity= 26.21 #rh, relative humidity, [%], float
 outdoorTemp = 76.83 #tout, outdoor temperature, float
 occupancy = False # = 1 #occupancy
 pmv = 0
-setpointTemp = 0
-
-# IPCsendGui function sends sensor reading to the GUI C++ code.
-def IPCsendGui(pmv, setpointTemp):
-    path= "/home/pi/WA/comfortControl/fifo/comfortToGui.fifo"
-    try:
-        os.mkfifo(path)
-    except FileExistsError:
-        pass
-    f = os.open(path, os.O_NONBLOCK|os.O_RDWR)
-    toSend = str(pmv)+','+str(setpointTemp)+',\n'
-    os.write(f,str.encode(toSend))
-    print("Sent: PMV=", pmv,", setpointTemp=",setpointTemp)
-
-class IPCreceiveGui(PatternMatchingEventHandler):
-    def on_modified(self, event):
-        print("file changed")
-        global desiredTemp, activity, indoorTemp, globeTemp, relHumidity, outdoorTemp, occupancy
-        super(IPCreceiveGui, self).on_modified(event)
-        with open("/home/pi/WA/comfortControl/fifo/guiToComfort.fifo", 'r') as f:
-            buf = f.read()
-        listVal = buf.split(',')
-        desiredTemp = float(listVal[0])
-        activity = listVal[1]
-        if (listVal[2] == "True"):
-            occupancy = True
-        else:
-            occupancy = False
-        globeTemp = float(listVal[3])
-        relHumidity = float(listVal[4])
-        outdoorTemp = float(listVal[5])
-        indoorTemp = float(listVal[6])
-        print("Received: desiredTemp=",desiredTemp,
-             ", activity=", activity,
-             ", occupancy=", occupancy,
-             ", globeTemp=", globeTemp,
-             ", relHumidity=", relHumidity,
-             ", outdoorTemp=", outdoorTemp,
-             ", indoorTemp=", indoorTemp)
-        IPCsendGui(pmv, setpointTemp)
+setpoint_temp = desiredTemp
+setpoint_temp_prev= desiredTemp
 
 def get_first_key(dictionary):
     for key in dictionary:
         return key
     raise IndexError
 
-#variables to recieve from the GUI: count, tdb, tg, rh, tout, occupancy, desiredTemp, activity
-#variables to send to the GUI: errors_1 to 5, setpoint_temp, PMV, PMV_bool (we need PMV bool for Joseph I think)
-
-##need you to add "tdb_reset = np.zeros(1440*365)" and "setpoint_temp = 0" in the pipes to run a single time like the variable count. 
-#I have them here so that I can test. I think we should also include the reset if loop at the top of the inside of the function to keep from infinitely storing data
-
-#eventually we should remove all the print() statements and rely on the GUI
-#Don't need to do this. When GUI runs none of these print since it is a background process
-#tout_saved = np.zeros(1440*365)
-setpoint_temp = desiredTemp
-setpoint_temp_prev= desiredTemp
-
-def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
+def comfortAnalysis(tdb, tg, rh, tout, occupancy):
+    start_time = time.time()
+    global pmv, setpoint_temp
     #sensor data here to be removed once the data is read in
     #tdb = 80# dry-bulb air temperature, [$^{\circ}$C]
     #tg = 78#globe temperature
     #rh = 50 # relative humidity, [%]
     #tout = 90 #outdoor temperature
     #occupancy = True #occupancy
-    #print(count, tdb, tg, rh, tout, occupancy)
+    #print("        comfortAnalysis.py",count, tdb, tg, rh, tout, occupancy)
     #formula to convert to Fahrenheit from Celsius
     #F = (Cx1.8) + 32
 
@@ -123,7 +76,7 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
         else :
             clo = 0.36 #workout clothes
         
-        #print(met) 
+        #print("        comfortAnalysis.py",met) 
 
     #Held Constant for residencies
     v = 0.1  # average air velocity, [m/s]
@@ -132,7 +85,7 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
     tr = t_mrt(tg, tdb, v, d=0.075, emissivity=0.95)
     #operative temp calulation
     op = 0.5 * (tdb + tr)
-    #print(op)
+    #print("        comfortAnalysis.py",op)
     
     # calculate the relative air velocity
     vr = v_relative(v=v, met=met)
@@ -153,25 +106,25 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
         error_1 = True
         
     if tdb <= 55 or tdb >= 90:
-        print("Potential unsafe conditions")
+        print("        comfortAnalysis.py","Potential unsafe conditions")
         error_2 = True
     if rh < 0 or rh > 100:   
-        print("Malfunction rh")
+        print("        comfortAnalysis.py","Malfunction rh")
         error_3 = True
     if tout < -50 or tout > 110:
-        print("Malfunction outdoor temp")
+        print("        comfortAnalysis.py","Malfunction outdoor temp")
         error_4 = True
     
     if tg <= 0 or tg >= 110:
-        print("Malfunction gt")
+        print("        comfortAnalysis.py","Malfunction gt")
         error_5 = True
         
     if tr <= 50 or tr >= 104:
-        print("Mean radiant temperature outside ASHRAE operating conditions")
+        print("        comfortAnalysis.py","Mean radiant temperature outside ASHRAE operating conditions")
         error_6 = True
         
     if tdb <= 50 or tdb >= 104:
-        print("Indoor temperature outside ASHRAE operating conditions" )
+        print("        comfortAnalysis.py","Indoor temperature outside ASHRAE operating conditions" )
         error_7 = True
         
     if error_1 == False and error_2 == False and error_3 == False and error_4 == False and error_5 == False and error_6 == False and error_7 == False:
@@ -197,14 +150,14 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
         if occupancy: #someone is home Occupancy = True
             if pmv >= -0.5 and pmv <= 0.5:
                 pmv_bool = 1 #comfort conditions met
-                #print("Comfort Conditions met")
-                #print(pmv)
+                #print("        comfortAnalysis.py","Comfort Conditions met")
+                #print("        comfortAnalysis.py",pmv)
                 setpoint_temp = setpoint_temp_prev #maintain the same temperature
                 
             else:
                 pmv_bool = 0 #comfrot conditons are not met
-                #print("Comfort Conditions NOT met")
-                #print(pmv)
+                #print("        comfortAnalysis.py","Comfort Conditions NOT met")
+                #print("        comfortAnalysis.py",pmv)
                 
                 #for loop to collect the mathematicaly PMV that would result from each setpoint option
                 for x in range(len(setpoint_options)):
@@ -226,23 +179,23 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
                                 pmv_minimum_index = x
         
                 setpoint_temp = round(setpoint_options[pmv_minimum_index],1 )
-                #print("PMV selected")
-                #print(pmv_options[pmv_minimum_index])
-                #print("setpoint selected:")
-                #print(setpoint_temp)
+                #print("        comfortAnalysis.py","PMV selected")
+                #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
+                #print("        comfortAnalysis.py","setpoint selected:")
+                #print("        comfortAnalysis.py",setpoint_temp)
             
 
         else: #someone is not home Occupancy = False
-            #print("No one home")
+            #print("        comfortAnalysis.py","No one home")
             if pmv >= -1.0 and pmv <= 1.0:
                 pmv_bool = 1 #comfort conditions met
-                #print("Comfort Conditions met")
-                #print(pmv)
+                #print("        comfortAnalysis.py","Comfort Conditions met")
+                #print("        comfortAnalysis.py",pmv)
                 setpoint_temp = setpoint_temp_prev #maintain the same temperature
-                #print(setpoint_temp_prev)
+                #print("        comfortAnalysis.py",setpoint_temp_prev)
         
                 if pmv <= 0.75 and pmv > 0: ## and pmv >=-0.75
-                    #print('but want to relax comfort conditons to save energy')
+                    #print("        comfortAnalysis.py",'but want to relax comfort conditons to save energy')
     
                     for x in range(len(setpoint_options)):
                         if setpoint_options[x] >= tout: #need to make sure heat does not turn on if the temperature is relaxed
@@ -268,13 +221,13 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
                                     pmv_minimum_index = x
         
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
-                    #print("PMV selected")
-                    #print(pmv_options[pmv_minimum_index])
-                    #print("setpoint selected:")
-                    #print(setpoint_temp)
+                    #print("        comfortAnalysis.py","PMV selected")
+                    #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
+                    #print("        comfortAnalysis.py","setpoint selected:")
+                    #print("        comfortAnalysis.py",setpoint_temp)
                     
                 if pmv >= -0.75 and pmv <0: ## and pmv >=-0.75:
-                    #print('but want to relax comfort conditons to save energy')
+                    #print("        comfortAnalysis.py",'but want to relax comfort conditons to save energy')
     
                     for x in range(len(setpoint_options)):
                         if setpoint_options[x] <= tout: #need to make sure heat does not turn on if the temperature is relaxed
@@ -300,14 +253,14 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
                                     pmv_minimum_index = x
         
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
-                    #print("PMV selected")
-                    #print(pmv_options[pmv_minimum_index])
-                    #print("setpoint selected:")
-                    #print(setpoint_temp)
+                    #print("        comfortAnalysis.py","PMV selected")
+                    #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
+                    #print("        comfortAnalysis.py","setpoint selected:")
+                    #print("        comfortAnalysis.py",setpoint_temp)
             
             else:
                 pmv_bool = 0 #comfrot conditons are not met
-                #print("Comfort Conditions NOT met")
+                #print("        comfortAnalysis.py","Comfort Conditions NOT met")
                 
                 #for loop to collect the mathematicaly PMV that would result from each setpoint option
                 for x in range(len(setpoint_options)):
@@ -324,52 +277,21 @@ def comfortAnalysis(count, tdb, tg, rh, tout, occupancy):
                             pmv_minimum_index = x
         
                 setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
-                #print("PMV minimum")
-                #print(pmv_minimum)
-                #print("setpoint selected:")
-                #print(setpoint_temp)
+                #print("        comfortAnalysis.py","PMV minimum")
+                #print("        comfortAnalysis.py",pmv_minimum)
+                #print("        comfortAnalysis.py","setpoint selected:")
+                #print("        comfortAnalysis.py",setpoint_temp)
          
     else: 
-        #print('Error Detected. Operating to entered Desired Temp')
+        #print("        comfortAnalysis.py",'Error Detected. Operating to entered Desired Temp')
         setpoint_temp = desiredTemp
         PMV_bool = 0
         
     setpoint_temp_prev = setpoint_temp #saves the previous setpoint
     
-    #print(setpoint_temp)
-
+    #print("        comfortAnalysis.py",pmv, setpoint_temp)
+    #print("        comfortAnalysis.py","ComfortAnalysis Code took", time.time() - start_time, "to run")
+    return (pmv,setpoint_temp)
     #END###########################################
-    return pmv, setpoint_temp
 
-# main initializes comfort analysis script
-def main():
-    print("Setup")
-    global pmv, setpointTemp
-    #Setup watchdog to handle receive from GUI event
-    fifoFile = "/home/pi/WA/comfortControl/fifo/guiToComfort.fifo"
-    fifoDir = os.path.split(fifoFile)[0]
-    observer = Observer()
-    handler = IPCreceiveGui([fifoFile])
-    observer.schedule(handler, fifoDir, recursive=True)
-    observer.start()
-    try:
-        #Main control loop of comfort analysis script
-        numComfortAnalysisRuns = 0
-        while(1):
-            #calculate pmv
-            print(numComfortAnalysisRuns,"Current: desiredTemp=",desiredTemp,
-                 ", activity=", activity,
-                 ", occupancy=", occupancy,
-                 ", globeTemp=", globeTemp,
-                 ", relHumidity=", relHumidity,
-                 ", outdoorTemp=", outdoorTemp,
-                 ", indoorTemp=", indoorTemp)
-            pmv, setpointTemp = comfortAnalysis(numComfortAnalysisRuns, indoorTemp, globeTemp, relHumidity, outdoorTemp, occupancy)
-            #IPCsendGui(pmv, setpointTemp) 
-            time.sleep(1)
-            numComfortAnalysisRuns = numComfortAnalysisRuns + 1
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
-
-main()
+#print("        comfortAnalysis.py","Intialize code took", time.time() - initialize_time, "to run")

@@ -696,10 +696,10 @@ void serverCOMFORT::clearNodes() {
 
 void serverCOMFORT::checkSensorReady() {
     sensorsReady = sensorStatus.indoor && sensorStatus.outdoor && sensorStatus.globe && sensorStatus.relHumidity && sensorStatus.occupancy;
-    cout << "sensorsReady = " << (sensorsReady ? "true" : "false") << endl;
-    if (sensorsReady == false) {
-        cout << "Not all sensors are connected." << endl;
-    }
+    //cout << "sensorsReady = " << (sensorsReady ? "true" : "false") << endl;
+    //if (sensorsReady == false) {
+    //    cout << "Not all sensors are connected." << endl;
+    //}
 }
 
 // Function for authentication process
@@ -854,7 +854,7 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
 // Simple print all nodes in nodeList
 void serverCOMFORT::printNodeCOMFORT() {
     int num = 0;
-    cout << "---------------------------------" << endl;
+    //cout << "---------------------------------" << endl;
     for (std::vector<nodeCOMFORT>::iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
         num++;
         cout << "Node " << num << ":" << endl;
@@ -885,34 +885,34 @@ void serverCOMFORT::setInData_received(bool value)
 {
     inData_received = value;
     if (inData_received) {
-        emit inData_receivedChanged(inData_received);
+        Q_EMIT inData_receivedChanged(inData_received);
     }
 }
 
 void serverCOMFORT::setStatusIndoor(bool value)
 {
     sensorStatus.indoor = value;
-    emit statusIndoorChanged(sensorStatus.indoor);
+    Q_EMIT statusIndoorChanged(sensorStatus.indoor);
 }
 void serverCOMFORT::setStatusOutdoor(bool value)
 {
     sensorStatus.outdoor = value;
-    emit statusOutdoorChanged(sensorStatus.outdoor);
+    Q_EMIT statusOutdoorChanged(sensorStatus.outdoor);
 }
 void serverCOMFORT::setStatusRelHum(bool value)
 {
     sensorStatus.relHumidity = value;
-    emit statusRelHumChanged(sensorStatus.relHumidity);
+    Q_EMIT statusRelHumChanged(sensorStatus.relHumidity);
 }
 void serverCOMFORT::setStatusGlobe(bool value)
 {
     sensorStatus.globe = value;
-    emit statusGlobeChanged(sensorStatus.globe);
+    Q_EMIT statusGlobeChanged(sensorStatus.globe);
 }
 void serverCOMFORT::setStatusOccupancy(bool value)
 {
     sensorStatus.occupancy = value;
-    emit statusOccupancyChanged(sensorStatus.occupancy);
+    Q_EMIT statusOccupancyChanged(sensorStatus.occupancy);
 }
 
 // AES Functions

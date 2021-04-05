@@ -29,7 +29,7 @@ private:
     QLCDNumber *currentTime;
     QTimer *updateClock;
 
-public slots:
+public Q_SLOTS:
     void activityChanged(QString value);
 };
 

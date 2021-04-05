@@ -62,4 +62,9 @@ unix:!macx: LIBS += -L$$PWD/cryptopp850/ -lcryptopp
 INCLUDEPATH += $$PWD/cryptopp850
 DEPENDPATH += $$PWD/cryptopp850
 
+CONFIG += no_keywords
+unix:!macx: LIBS += -L/usr/include/python3.7m -lpython3.7m
+INCLUDEPATH += /usr/include/python3.7m
+DEPENDPATH += /usr/include/python3.7m
+
 unix:!macx: PRE_TARGETDEPS += $$PWD/cryptopp850/libcryptopp.a

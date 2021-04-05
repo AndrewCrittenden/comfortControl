@@ -38,6 +38,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*ini
     stack->addWidget(settings);
     stack->setCurrentWidget(home);
     //stack->setWindowState(Qt::WindowFullScreen);
+    qDebug() << "Please wait, Setting up comfortAnalysis.py";
+    Py_Initialize();
+    PyRun_SimpleString("import sys");
+    PyRun_SimpleString("sys.path.append(\".\")");
+    pName = PyUnicode_DecodeFSDefault("comfortAnalysis");
+    pModule = PyImport_Import(pName);
+    pFunc = PyObject_GetAttrString(pModule,"comfortAnalysis");
+    updatePMV();
     stack->show();
 }
 
@@ -59,17 +67,10 @@ void MainWindow::setupWindow(){
     QObject::connect(&server, &serverCOMFORT::statusGlobeChanged, this, &MainWindow::globeStatus);
     QObject::connect(&server, &serverCOMFORT::statusOccupancyChanged, this, &MainWindow::occupancyStatus);
 
-    //QObject::connect(&server, &serverCOMFORT::sensorsReadyChanged, this, &MainWindow::refreshMeasurements);
-
     //QTimer *sensorTimer = new QTimer(this);
-    //QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::refreshMeasurements);
+    //QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::updatePMV);
     //sensorTimer->start(REFRESH_MEASUREMENTS);
-    //IPC communication with comfortAnalysis.py
-    QFileSystemWatcher *IPCrecieveTrigger = new QFileSystemWatcher;
-    IPCrecieveTrigger->addPath("/home/pi/WA/comfortControl/fifo/comfortToGui.fifo");
-    QObject::connect(IPCrecieveTrigger, &QFileSystemWatcher::fileChanged, this, &MainWindow::IPCRecieveComfort);
-    QObject::connect(home->tempDial, &QDial::valueChanged, this, &MainWindow::IPCSendComfort);
-    IPCSendComfort(0);
+
     //Start serverCOMFORT thread
     QFuture<void> future = QtConcurrent::run([this] {
         server.serverOperation();
@@ -90,21 +91,46 @@ void MainWindow::updateGatherFreq(int f){
     server.gatherFrequency = f*1000;
 }
 
+void MainWindow::updatePMV(){
+    PyObject *pArgs, *pValue;    
+    int numArgs = 5;
+    pArgs = PyTuple_New(numArgs);
+    //Define arguements to pass to python code
+    pValue = PyLong_FromDouble(g_indoorTemp);
+    PyTuple_SetItem(pArgs, 0, pValue); //indoorTemp
+    pValue = PyLong_FromDouble(g_globeTemp);
+    PyTuple_SetItem(pArgs, 1, pValue); //globeTemp
+    pValue = PyLong_FromDouble(g_relHumidity);
+    PyTuple_SetItem(pArgs, 2, pValue); //relativeHumidity
+    pValue = PyLong_FromDouble(g_outdoorTemp);
+    PyTuple_SetItem(pArgs, 3, pValue); //outdoorTemp
+    pValue = PyLong_FromLong(g_occupancy);
+    PyTuple_SetItem(pArgs, 4, pValue); //occupancy
+    pValue = PyObject_CallObject(pFunc, pArgs);
+    double pyPmv, pySetpoint;
+    PyArg_ParseTuple(pValue,"d|d",&pyPmv,&pySetpoint);
+    //printf("Result of call: %f, %f\n",pyPmv,pySetpoint);
+    g_pmv = pyPmv;
+    g_setpoint_temperature = pySetpoint;
+    sensors->pmv->display(g_pmv);
+    sensors->setpointTemp->display(g_setpoint_temperature);
+}
+
 void MainWindow::refreshMeasurements(){
     dataIn newData = server.buffIn.GetPublicBuffer();
     server.inData_received = false;
-    qDebug("Recieving from wireless");
-    qDebug() << "Server indoor is " << newData.indoor;
-    qDebug() << "Server outdoor is " << newData.outdoor;
-    qDebug() << "Server relHumidity is " << newData.relHumidity;
-    qDebug() << "Server globe is " << newData.globe;
-    qDebug() << "Server occupancy is " << newData.occupancy;
+    //qDebug("Recieving from wireless");
+    //qDebug() << "Server indoor is " << newData.indoor;
+    //qDebug() << "Server outdoor is " << newData.outdoor;
+    //qDebug() << "Server relHumidity is " << newData.relHumidity;
+    //qDebug() << "Server globe is " << newData.globe;
+    //qDebug() << "Server occupancy is " << newData.occupancy;
     g_indoorTemp = newData.indoor;
     g_outdoorTemp = newData.outdoor;
     g_relHumidity = newData.relHumidity;
     g_globeTemp = newData.globe*9/5+32; //convert to farhenheit
     g_occupancy = newData.occupancy;
-    qDebug() << g_setpoint_temperature << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
+    //qDebug() << g_setpoint_temperature << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
     sensors->indoorTemp->display(g_indoorTemp);
     sensors->outdoorTemp->display(g_outdoorTemp);
     sensors->relHumidity->display(g_relHumidity);
@@ -117,11 +143,11 @@ void MainWindow::refreshMeasurements(){
            sensors->occupancy->setText("Vacant");
     }
     if(server.sensorsReady){
-        IPCSendComfort(g_desiredTemp);
+        updatePMV();
         controller.setSetpoint(g_setpoint_temperature);
         controller.setCurrentTemperature(newData.indoor);
         g_heatCoolOutput = controller.forceUpdate();
-        qDebug() << g_heatCoolOutput;
+        //qDebug() << g_heatCoolOutput;
         dataOut toSend;
         toSend.output = g_heatCoolOutput;
         server.buffOut.SetPrivateBuffer(toSend);
@@ -137,39 +163,6 @@ void MainWindow::refreshMeasurements(){
         data.close();
     }
 
-}
-
-void MainWindow::IPCRecieveComfort(){
-    const char *fifo = "/home/pi/WA/comfortControl/fifo/comfortToGui.fifo";
-    mkfifo(fifo, 0666);
-    int fd = open(fifo,O_RDONLY);
-    char buf[MAX_IPC_CHAR];
-    read(fd,buf,MAX_IPC_CHAR);
-    QString str = QString(buf);
-    QStringList list = str.split(',');
-    qDebug() << list;
-    g_pmv = list[0].toFloat();
-    g_setpoint_temperature = list[1].toFloat();
-    sensors->pmv->display(g_pmv);
-    sensors->setpointTemp->display(g_setpoint_temperature);
-    g_isComfortable = true;
-
-}
-
-void MainWindow::IPCSendComfort(int dt){
-    g_desiredTemp = dt;
-    const char *fifo = "/home/pi/WA/comfortControl/fifo/guiToComfort.fifo";
-    mkfifo(fifo, 0666);    
-    string dtStr = to_string(g_desiredTemp)+","+
-            g_activityLevel+","+
-            to_string(g_occupancy)+","+
-            to_string(g_globeTemp)+","+
-            to_string(g_relHumidity)+","+
-            to_string(g_outdoorTemp)+","+
-            to_string(g_indoorTemp)+",\n";
-    int fd = open(fifo, O_NONBLOCK|O_RDWR);
-    write(fd,dtStr.c_str(),dtStr.length()+1);
-    ::close(fd);
 }
 
 void MainWindow::indoorStatus(bool value){
