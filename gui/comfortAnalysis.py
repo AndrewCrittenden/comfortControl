@@ -150,7 +150,7 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
                 #print("        comfortAnalysis.py",pmv)
                 setpoint_temp = setpoint_temp_prev #maintain the same temperature
                 
-            else:
+            else: 
                 pmv_bool = 0 #comfort conditons are not met
                 #print("        comfortAnalysis.py","Comfort Conditions NOT met")
                 #print("        comfortAnalysis.py",pmv)
@@ -165,11 +165,11 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
                 pmv_minimum_index = 0 #returned to isolate the temperaure setpoint that goes with the minimum PMV
                 for x in range(len(pmv_options)): #check each potential PMV to find the one that best meets the range -0.5 to 0.5
                     if pmv_options[x] <= 0.5 and pmv_options[x] >= -0.5:
-                        if pmv > 0:
+                        if pmv > 0:# already know heat or cool must come on because it is outside the range so isolate which one and find the closest value to the edge of comfort range
                             if 0.5 - pmv_options[x] < pmv_minimum: #want to have to change the pmv to the closest to 0.5 to save energy and still be comfortable
                                 pmv_minimum = 0.5 - pmv_options[x]
                                 pmv_minimum_index = x
-                        if pmv < 0: #want to have to change the pmv to the closest to -0.5 to save energy and still be comfortable
+                        if pmv < 0: # already know heat or cool must come on because it is outside the range so isolate which one and find the closest value to the edge of comfort range
                             if 0.5 + pmv_options[x] < pmv_minimum:
                                 pmv_minimum =  0.5 + pmv_options[x]
                                 pmv_minimum_index = x
@@ -193,7 +193,7 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
                 if pmv <= 0.75 and pmv >= 0:#pmv is warm but could be relaxed to be warmer
                     #print("        comfortAnalysis.py",'but want to relax comfort conditons to save energy')
     
-                    for x in range(len(setpoint_options)): 
+                    for x in range(len(setpoint_options)): #get potential PMV for setpoint options
                         if setpoint_options[x] >= tout: #need to make sure heat does not turn on past conditions outside
                             results = pmv_ppd(tdb=setpoint_options[x], tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
                             key1 = get_first_key(results)
@@ -204,12 +204,10 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
                     pmv_minimum = 5 #nonsensical value to be replaced by the loop
                     pmv_minimum_index = 0 #returned to isolate the temperaure setpoint that goes with the minimum PMV
                     for x in range(len(pmv_options)): #for loop to collect iteratively the PMV that would result from each setpoint option
-                        if pmv_options[x] <= 1.0 and pmv_options[x] >= -1.0:
-                        
-                            if pmv > 0:
-                                if 1 - pmv_options[x] < pmv_minimum:
-                                    pmv_minimum = 1- pmv_options[x]
-                                    pmv_minimum_index = x
+                        if pmv_options[x] <= 1.0 and pmv_options[x] >= 0.75: #only compare the PMV possibilities within the range we want
+                            if 1 - pmv_options[x] < pmv_minimum:
+                                pmv_minimum = 1- pmv_options[x]
+                                pmv_minimum_index = x
                     
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
                     #print("        comfortAnalysis.py","PMV selected")
@@ -220,7 +218,7 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
                 if pmv >= -0.75 and pmv <= 0: ##pmv is cold but could be relaxed to be cooler
                     #print("        comfortAnalysis.py",'but want to relax comfort conditons to save energy')
     
-                    for x in range(len(setpoint_options)):
+                    for x in range(len(setpoint_options)): #get potential PMV for setpoint options
                         if setpoint_options[x] <= tout: #need to make sure heat does not turn on if the temperature is relaxed
                             results = pmv_ppd(tdb=setpoint_options[x], tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
                             key1 = get_first_key(results)
@@ -231,11 +229,10 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
                     pmv_minimum = 5 #nonsensical value to be replaced by the loop
                     pmv_minimum_index = 0 #returned to isolate the temperaure setpoint that goes with the minimum PMV
                     for x in range(len(pmv_options)):
-                        if pmv_options[x] <= 1.0 and pmv_options[x] >= -1.0: # make sure the potential PMV is within the range                
-                            if pmv < 0 : #check if the pmv is already cold
-                                if 1 + pmv_options[x] < pmv_minimum: #pmv will be a negative number so adding to find the minimum distance from edge of range
-                                    pmv_minimum = 1 + pmv_options[x]
-                                    pmv_minimum_index = x
+                        if pmv_options[x] <= -0.75 and pmv_options[x] >= -1.0: # make sure the potential PMV is within the range                
+                            if 1 + pmv_options[x] < pmv_minimum: #pmv will be a negative number so adding to find the minimum distance from edge of range
+                                pmv_minimum = 1 + pmv_options[x]
+                                pmv_minimum_index = x
         
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
                     #print("        comfortAnalysis.py","PMV selected")
@@ -247,19 +244,55 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
                 pmv_bool = 0 #comfort conditons are not met in case no one is home
                 #print("        comfortAnalysis.py","Comfort Conditions NOT met")
                 
-                #for loop to collect iteratively the PMV that would result from each setpoint option
-                for x in range(len(setpoint_options)):
-                    results = pmv_ppd(tdb=setpoint_options[x], tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
-                    key1 = get_first_key(results)
-                    pmv_options[x]= results[key1]
+                if pmv >= 0:#pmv is too warm
+                    #print("        comfortAnalysis.py",'but want to relax comfort conditons to save energy')
+                    for x in range(len(setpoint_options)): #get potential PMV for setpoint options
+                        if setpoint_options[x] >= tout: #need to make sure heat does not turn on past conditions outside
+                            results = pmv_ppd(tdb=setpoint_options[x], tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
+                            key1 = get_first_key(results)
+                            pmv_options[x]= results[key1]
+                        else:
+                            pmv_options[x] = 100 #value will never be picked essentially removing those options 
+    
+                    pmv_minimum = 5 #nonsensical value to be replaced by the loop
+                    pmv_minimum_index = 0 #returned to isolate the temperaure setpoint that goes with the minimum PMV
+                    for x in range(len(pmv_options)): #for loop to collect iteratively the PMV that would result from each setpoint option
+                        if pmv_options[x] <= 1.0 and pmv_options[x] >= 0.75: #only compare the PMV possibilities within the range we want
+                            if 1 - pmv_options[x] < pmv_minimum:
+                                pmv_minimum = 1- pmv_options[x]
+                                pmv_minimum_index = x
+                    
+                    setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
+                    #print("        comfortAnalysis.py","PMV selected")
+                    #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
+                    #print("        comfortAnalysis.py","setpoint selected:")
+                    #print("        comfortAnalysis.py",setpoint_temp)
+                    
+                if pmv <= 0: ##pmv is too cold 
+                    #print("        comfortAnalysis.py",'but want to relax comfort conditons to save energy')
+    
+                    for x in range(len(setpoint_options)): #get potential PMV for setpoint options
+                        if setpoint_options[x] <= tout: #need to make sure heat does not turn on if the temperature is relaxed
+                            results = pmv_ppd(tdb=setpoint_options[x], tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
+                            key1 = get_first_key(results)
+                            pmv_options[x]= results[key1]
+                        else:
+                            pmv_options[x] = 100 #value will never be picked essentially removing those options (next if statement will skip all these)
+    
+                    pmv_minimum = 5 #nonsensical value to be replaced by the loop
+                    pmv_minimum_index = 0 #returned to isolate the temperaure setpoint that goes with the minimum PMV
+                    for x in range(len(pmv_options)):
+                        if pmv_options[x] <= -0.75 and pmv_options[x] >= -1.0: # make sure the potential PMV is within the range                
+                            if 1 + pmv_options[x] < pmv_minimum: #pmv will be a negative number so adding to find the minimum distance from edge of range
+                                pmv_minimum = 1 + pmv_options[x]
+                                pmv_minimum_index = x
         
-                pmv_minimum = 5 #nonsensical value to be replaced by the loop
-                pmv_minimum_index = 0 #returned to isolate the temperaure setpoint that goes with the minimum PMV
-                for x in range(len(pmv_options)):
-                    if pmv_options[x] <= 1.0 and pmv_options[x] >= -1.0: #should this be 1 because comfort conditions are relaxed
-                        if 1.0 - abs(pmv_options[x]) < pmv_minimum: #isolate the setpoint closest to 1.0 to save energy
-                            pmv_minimum = pmv_options[x]
-                            pmv_minimum_index = x
+                    setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
+                    #print("        comfortAnalysis.py","PMV selected")
+                    #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
+                    #print("        comfortAnalysis.py","setpoint selected:")
+                    #print("        comfortAnalysis.py",setpoint_temp)
+            
         
                 setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
                 #print("        comfortAnalysis.py","PMV minimum")
