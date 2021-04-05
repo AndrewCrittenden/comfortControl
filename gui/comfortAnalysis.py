@@ -131,11 +131,7 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
         #only enter the ashrae calcs if error free
         # calculate PMV in accordance with the ASHRAE 55 2017
         results = pmv_ppd(tdb=tdb, tr=tr, vr=vr, rh=rh, met=met, clo=icl, standard="ASHRAE", units="IP")
-    
-        def get_first_key(dictionary):
-            for key in dictionary:
-                return key
-            raise IndexError
+   
         key1 = get_first_key(results)
         pmv = results[key1]
             
