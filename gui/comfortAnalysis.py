@@ -25,25 +25,24 @@ import psutil
 # values to be returned by the comfort code: PMV, PMV_bool, error_1 to error_7 in bool, setpoint_temp. This is 10 things
 
 #Default initial value, updated when GUI runs
-desiredTemp = 75.07 #float
-activity = "resting" #string
-indoorTemp= 76.83 #tdb, dry-bulb air temperature, [$^{\circ}$C], float
-globeTemp= 77.99 #tg, globe temperature, float
-relHumidity= 26.21 #rh, relative humidity, [%], float
-outdoorTemp = 76.83 #tout, outdoor temperature, float
-occupancy = False # = 1 #occupancy
-pmv = 0
-setpoint_temp = desiredTemp
-setpoint_temp_prev= desiredTemp
+#desiredTemp = 75.07 #float
+#activity = "resting" #string
+#indoorTemp= 76.83 #tdb, dry-bulb air temperature, [$^{\circ}$C], float
+#globeTemp= 77.99 #tg, globe temperature, float
+#relHumidity= 26.21 #rh, relative humidity, [%], float
+#outdoorTemp = 76.83 #tout, outdoor temperature, float
+#occupancy = False # = 1 #occupancy
+#pmv = 0
+#setpoint_temp = desiredTemp
+#setpoint_temp_prev= desiredTemp
 
 def get_first_key(dictionary):
     for key in dictionary:
         return key
     raise IndexError
 
-def comfortAnalysis(tdb, tg, rh, tout, occupancy):
+def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
     start_time = time.time()
-    global pmv, setpoint_temp
     #sensor data here to be removed once the data is read in
     #tdb = 80# dry-bulb air temperature, [$^{\circ}$C]
     #tg = 78#globe temperature
@@ -66,11 +65,11 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
 
     #imput from user - recieved from GUI
     #activity = "moderately active" #  "resting", "moderately active", "active"
-    if activity == "resting":
+    if activity == 0: # resting
         met = met_typical_tasks['Seated, quiet']  #1.0 met range  
-    if activity == "moderately active":
+    if activity == 1: # moderately active
         met = 1.5  #walking around
-    if activity == "active":
+    if activity == 2: # active
         met = 2 #light exercise
         if tout < 50:
             clo = .5 
@@ -303,14 +302,15 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy):
     else: 
         #print("        comfortAnalysis.py",'Error Detected. Operating to entered Desired Temp')
         setpoint_temp = desiredTemp
-        PMV_bool = False 
-        PMV =  0.00
+        pmv_bool = False 
+        pmv =  0.00
         
     setpoint_temp_prev = setpoint_temp #saves the previous setpoint
     
     #print("        comfortAnalysis.py",pmv, setpoint_temp)
     #print("        comfortAnalysis.py","ComfortAnalysis Code took", time.time() - start_time, "to run")
-    return (pmv,pmv_bool,setpoint_temp, error_1, error_2, error_3, error_4, error_5, error_6, error_7)
+    #return (pmv,pmv_bool,setpoint_temp, error_1, error_2, error_3, error_4, error_5, error_6, error_7)
+    return (pmv, setpoint_temp)
     #END###########################################
 
 #print("        comfortAnalysis.py","Intialize code took", time.time() - initialize_time, "to run")

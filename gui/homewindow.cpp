@@ -21,19 +21,24 @@ HomeWindow::HomeWindow(QWidget *parent) : QWidget(parent)
     layout->addWidget(sensorsButton,0,0);
     layout->addWidget(settingsButton,1,2);
     this->setLayout(layout);
+    tempDial->setValue(g_desiredTemp);
+    desiredTemp->display(g_desiredTemp);
     QStringList activityOptions = {"resting", "moderately active", "active"};
     activityBox->addItems(activityOptions);
-    QObject::connect(tempDial, SIGNAL(valueChanged(int)), desiredTemp, SLOT(display(int)));
     QObject::connect(activityBox, &QComboBox::currentTextChanged, this, &HomeWindow::activityChanged);
+    QObject::connect(tempDial, &QDial::valueChanged, this, &HomeWindow::desiredTempChanged);
     updateClock = new QTimer(this);
     QObject::connect(updateClock, &QTimer::timeout, [=] { currentTime->display(QTime::currentTime().toString("hh:mm:ss")); });
     updateClock->start(1000);
 }
 
+void HomeWindow::desiredTempChanged(int dt){
+    desiredTemp->display(dt);
+    g_desiredTemp = dt;
+}
+
 void HomeWindow::activityChanged(QString value){
     g_activityLevel = value.toStdString();
-    qDebug() << "activity set to ";
-    std::cout << g_activityLevel;
 }
 
 HomeWindow::~HomeWindow()

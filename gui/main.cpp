@@ -30,21 +30,20 @@ int tick_get() {  // TODO Fix this to work with PID
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    MainWindow w;
     //Initialize global variables with default values
     g_isComfortable = true;
     g_setpoint_temperature = 72;
     g_heatCoolOutput = 0;
     g_indoorTemp = 72;
     g_outdoorTemp = 72;
-    g_relHumidity = 0.5;
+    g_relHumidity = 50;
     g_globeTemp = 70;
     g_occupancy = true;
     g_pmv = 0;
     g_desiredTemp = 72;
     g_activityLevel = "resting";
-
+    QApplication a(argc, argv);
+    MainWindow w;
     //Run GUI application
     w.setupWindow();
     return a.exec();

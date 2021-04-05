@@ -36,7 +36,7 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     void updateGatherFreq(int f);
-    void updatePMV();
+    void updatePMV(bool doUpdate);
     void setWindow(QWidget *w);
     void refreshMeasurements();
     void indoorStatus(bool value);

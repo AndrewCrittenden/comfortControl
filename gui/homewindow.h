@@ -31,6 +31,7 @@ private:
 
 public Q_SLOTS:
     void activityChanged(QString value);
+    void desiredTempChanged(int dt);
 };
 
 #endif // HOMEWINDOW_H

@@ -38,6 +38,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*ini
     stack->addWidget(settings);
     stack->setCurrentWidget(home);
     //stack->setWindowState(Qt::WindowFullScreen);
+}
+
+void MainWindow::setupWindow(){
     qDebug() << "Please wait, Setting up comfortAnalysis.py";
     Py_Initialize();
     PyRun_SimpleString("import sys");
@@ -45,11 +48,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*ini
     pName = PyUnicode_DecodeFSDefault("comfortAnalysis");
     pModule = PyImport_Import(pName);
     pFunc = PyObject_GetAttrString(pModule,"comfortAnalysis");
-    updatePMV();
-    stack->show();
-}
+    updatePMV(false);
+    //Timer for testing various features, Uncomment and change connect function to test various signals/slots of the GUI
+    //QTimer *sensorTimer = new QTimer(this);
+    //QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::updatePMV);
+    //sensorTimer->start(REFRESH_MEASUREMENTS);
 
-void MainWindow::setupWindow(){
+    //Connect signals and slots
     QObject::connect(sensors->backButton, &QPushButton::clicked, [=] { setWindow(home); });
     QObject::connect(settings->backButton, &QPushButton::clicked, [=] { setWindow(home); });
     QObject::connect(home->sensorsButton, &QPushButton::clicked, [=] { setWindow(sensors); });
@@ -67,9 +72,6 @@ void MainWindow::setupWindow(){
     QObject::connect(&server, &serverCOMFORT::statusGlobeChanged, this, &MainWindow::globeStatus);
     QObject::connect(&server, &serverCOMFORT::statusOccupancyChanged, this, &MainWindow::occupancyStatus);
 
-    //QTimer *sensorTimer = new QTimer(this);
-    //QObject::connect(sensorTimer, &QTimer::timeout, this, &MainWindow::updatePMV);
-    //sensorTimer->start(REFRESH_MEASUREMENTS);
 
     //Start serverCOMFORT thread
     QFuture<void> future = QtConcurrent::run([this] {
@@ -82,6 +84,7 @@ void MainWindow::setupWindow(){
         output << "Timestamp, Indoor Temperature (F), Outdoor Temperature (F), Relative Humidity (%), Globe Temperature(F), Occupancy, PMV, Setpoint Temperature (F), Desired Temperature (F), Activity Level, Appliance Wattage (W)\n";
     }
     data.close();
+    stack->show();
 }
 
 void MainWindow::updateGatherFreq(int f){
@@ -91,63 +94,78 @@ void MainWindow::updateGatherFreq(int f){
     server.gatherFrequency = f*1000;
 }
 
-void MainWindow::updatePMV(){
+void MainWindow::updatePMV(bool doUpdate){
     PyObject *pArgs, *pValue;    
-    int numArgs = 5;
+    int numArgs = 7;
     pArgs = PyTuple_New(numArgs);
     //Define arguements to pass to python code
-    pValue = PyLong_FromDouble(g_indoorTemp);
-    PyTuple_SetItem(pArgs, 0, pValue); //indoorTemp
-    pValue = PyLong_FromDouble(g_globeTemp);
-    PyTuple_SetItem(pArgs, 1, pValue); //globeTemp
-    pValue = PyLong_FromDouble(g_relHumidity);
-    PyTuple_SetItem(pArgs, 2, pValue); //relativeHumidity
-    pValue = PyLong_FromDouble(g_outdoorTemp);
-    PyTuple_SetItem(pArgs, 3, pValue); //outdoorTemp
-    pValue = PyLong_FromLong(g_occupancy);
-    PyTuple_SetItem(pArgs, 4, pValue); //occupancy
+    //Must be in order (tdb, tg, rh, tout, occupancy, desiredTemp, activity)
+    PyTuple_SetItem(pArgs, 0, PyLong_FromDouble(g_indoorTemp));
+    PyTuple_SetItem(pArgs, 1, PyLong_FromDouble(g_globeTemp));
+    PyTuple_SetItem(pArgs, 2, PyLong_FromDouble(g_relHumidity));
+    PyTuple_SetItem(pArgs, 3, PyLong_FromDouble(g_outdoorTemp));
+    PyTuple_SetItem(pArgs, 4, PyLong_FromLong(g_occupancy));
+    PyTuple_SetItem(pArgs, 5, PyLong_FromLong(g_desiredTemp));
+    if(g_activityLevel == "resting"){
+        PyTuple_SetItem(pArgs, 6, PyLong_FromLong(0));
+    }
+    else if(g_activityLevel == "moderately active"){
+        PyTuple_SetItem(pArgs, 6, PyLong_FromLong(1));
+    }
+    else if(g_activityLevel == "active"){
+        PyTuple_SetItem(pArgs, 6, PyLong_FromLong(2));
+    }
     pValue = PyObject_CallObject(pFunc, pArgs);
     double pyPmv, pySetpoint;
     PyArg_ParseTuple(pValue,"d|d",&pyPmv,&pySetpoint);
     //printf("Result of call: %f, %f\n",pyPmv,pySetpoint);
-    g_pmv = pyPmv;
-    g_setpoint_temperature = pySetpoint;
+    if(doUpdate){
+        g_pmv = pyPmv;
+        g_setpoint_temperature = pySetpoint;
+    }
     sensors->pmv->display(g_pmv);
     sensors->setpointTemp->display(g_setpoint_temperature);
 }
 
 void MainWindow::refreshMeasurements(){
+    //Refresh measurements from server
     dataIn newData = server.buffIn.GetPublicBuffer();
     server.inData_received = false;
-    //qDebug("Recieving from wireless");
-    //qDebug() << "Server indoor is " << newData.indoor;
-    //qDebug() << "Server outdoor is " << newData.outdoor;
-    //qDebug() << "Server relHumidity is " << newData.relHumidity;
-    //qDebug() << "Server globe is " << newData.globe;
-    //qDebug() << "Server occupancy is " << newData.occupancy;
-    g_indoorTemp = newData.indoor;
-    g_outdoorTemp = newData.outdoor;
-    g_relHumidity = newData.relHumidity;
-    g_globeTemp = newData.globe*9/5+32; //convert to farhenheit
-    g_occupancy = newData.occupancy;
-    //qDebug() << g_setpoint_temperature << g_indoorTemp << g_outdoorTemp << g_relHumidity << g_globeTemp << g_occupancy << g_activityLevel.c_str();
-    sensors->indoorTemp->display(g_indoorTemp);
-    sensors->outdoorTemp->display(g_outdoorTemp);
-    sensors->relHumidity->display(g_relHumidity);
-    sensors->globeTemp->display(g_globeTemp);
-    sensors->heatCoolOutput->display(g_heatCoolOutput);
-    if (g_occupancy) {
-           sensors->occupancy->setText("Occupied");
+    if(server.sensorStatus.indoor){
+        g_indoorTemp = newData.indoor;
+        sensors->indoorTemp->display(g_indoorTemp);
     }
-       else {
-           sensors->occupancy->setText("Vacant");
+    if(server.sensorStatus.outdoor){
+        g_outdoorTemp = newData.outdoor;
+        sensors->outdoorTemp->display(g_outdoorTemp);
     }
-    if(server.sensorsReady){
-        updatePMV();
+    if(server.sensorStatus.relHumidity){
+        g_relHumidity = newData.relHumidity;
+        sensors->relHumidity->display(g_relHumidity);
+    }
+    if(server.sensorStatus.globe){
+        g_globeTemp = newData.globe*9/5+32; //convert to farhenheit
+        sensors->globeTemp->display(g_globeTemp);
+    }
+    if(server.sensorStatus.occupancy){
+        g_occupancy = newData.occupancy;
+        if (g_occupancy) {
+               sensors->occupancy->setText("Occupied");
+        }
+           else {
+               sensors->occupancy->setText("Vacant");
+        }
+    }
+    //If all of the sensors are connected
+    if(true){ //server.sensorsReady){ //TODO remove this
+        //Calculate PMV
+        updatePMV(true);
+        //Run PID controller
         controller.setSetpoint(g_setpoint_temperature);
         controller.setCurrentTemperature(newData.indoor);
         g_heatCoolOutput = controller.forceUpdate();
-        //qDebug() << g_heatCoolOutput;
+        sensors->heatCoolOutput->display(g_heatCoolOutput);
+        //Send wattage to fridge
         dataOut toSend;
         toSend.output = g_heatCoolOutput;
         server.buffOut.SetPrivateBuffer(toSend);
