@@ -11,6 +11,7 @@
 #include <QComboBox>
 #include <QTime>
 #include <QTimer>
+#include <QLabel>
 
 class HomeWindow : public QWidget
 {
@@ -22,12 +23,19 @@ public:
     QPushButton *settingsButton;
     QDial *tempDial;
     QComboBox *activityBox;
+    QLCDNumber *indoorTemp;
+    QLCDNumber *outdoorTemp;
+    QLCDNumber *relHumidity;
 
 private:
     QGridLayout *layout;
+    QHBoxLayout *sensorsBar;
     QLCDNumber *desiredTemp;
     QLCDNumber *currentTime;
     QTimer *updateClock;
+    QLabel *homeImage;
+    QLabel *outdoorImage;
+    QLabel *humidityImage;
 
 public Q_SLOTS:
     void activityChanged(QString value);

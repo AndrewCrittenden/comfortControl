@@ -9,8 +9,13 @@ settingswindow::settingswindow(QWidget *parent) : QWidget(parent)
 {
     layout = new QGridLayout(this);
     authenticateButton = new QPushButton("Authenticate", this);
+    authenticateButton->setFixedSize(BUTTON_SIZE);
     clearNodeButton = new QPushButton("Clear Nodes", this);
-    backButton = new QPushButton("Back", this);
+    clearNodeButton->setFixedSize(BUTTON_SIZE);
+    backButton = new QPushButton("", this);
+    backButton->setFixedSize(BUTTON_SIZE);
+    backButton->setIcon(QIcon("/home/pi/WA/comfortControl/gui/icons/arrow-go-back-line.svg"));
+    backButton->setIconSize(ICON_SIZE);
     gatherFreqSlider = new QSlider(Qt::Horizontal, this);
     gatherFreqSlider->setRange(MIN_GATHERFREQ, MAX_GATHERFREQ);
     gatherFreqSlider->setValue(DEFAULT_GATHERFREQ);

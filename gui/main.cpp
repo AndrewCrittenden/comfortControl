@@ -10,6 +10,7 @@
 #include "measurements.h"
 #include <thread>
 #include <QTime>
+#include <QtQuickControls2/QQuickStyle>
 
 bool g_isComfortable;
 double g_setpoint_temperature;
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
     g_pmv = 0;
     g_desiredTemp = 72;
     g_activityLevel = "resting";
+    //QQuickStyle::setStyle("Material");
     QApplication a(argc, argv);
     MainWindow w;
     //Run GUI application

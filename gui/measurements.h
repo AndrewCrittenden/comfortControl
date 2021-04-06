@@ -2,6 +2,11 @@
 #define MEASUREMENTS_H
 
 #include <iostream>
+#include <QSize>
+
+const int STANDARD_LENGTH = 110;
+const QSize BUTTON_SIZE = QSize(STANDARD_LENGTH, STANDARD_LENGTH);
+const QSize ICON_SIZE = QSize(70, 70);
 
 extern bool g_isComfortable;
 extern double g_setpoint_temperature; // unit fahrenheit

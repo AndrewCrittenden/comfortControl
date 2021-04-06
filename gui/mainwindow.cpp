@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*ini
     stack->addWidget(sensors);
     stack->addWidget(settings);
     stack->setCurrentWidget(home);
-    //stack->setWindowState(Qt::WindowFullScreen);
+    stack->setWindowState(Qt::WindowFullScreen);
 }
 
 void MainWindow::setupWindow(){
@@ -134,14 +134,17 @@ void MainWindow::refreshMeasurements(){
     if(server.sensorStatus.indoor){
         g_indoorTemp = newData.indoor;
         sensors->indoorTemp->display(g_indoorTemp);
+        home->indoorTemp->display(g_indoorTemp);
     }
     if(server.sensorStatus.outdoor){
         g_outdoorTemp = newData.outdoor;
         sensors->outdoorTemp->display(g_outdoorTemp);
+        home->outdoorTemp->display(g_outdoorTemp);
     }
     if(server.sensorStatus.relHumidity){
         g_relHumidity = newData.relHumidity;
         sensors->relHumidity->display(g_relHumidity);
+        home->relHumidity->display(g_relHumidity);
     }
     if(server.sensorStatus.globe){
         g_globeTemp = newData.globe*9/5+32; //convert to farhenheit

@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui
+QT_QUICK_CONTROLS_STYLE=material ./app
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

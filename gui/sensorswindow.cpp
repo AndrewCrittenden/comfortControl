@@ -1,10 +1,15 @@
 #include "sensorswindow.h"
 #include <QApplication>
+#include "measurements.h"
+#include <QFont>
 
 SensorsWindow::SensorsWindow(QWidget *parent) : QWidget(parent)
 {
     layout = new QGridLayout(this);
-    backButton = new QPushButton("Back", this);
+    backButton = new QPushButton("", this);
+    backButton->setFixedSize(BUTTON_SIZE);
+    backButton->setIcon(QIcon("/home/pi/WA/comfortControl/gui/icons/arrow-go-back-line.svg"));
+    backButton->setIconSize(ICON_SIZE);
     indoorTemp = new QLCDNumber(this);
     outdoorTemp = new QLCDNumber(this);
     relHumidity = new QLCDNumber(this);
@@ -26,28 +31,44 @@ SensorsWindow::SensorsWindow(QWidget *parent) : QWidget(parent)
     relHumiditySatusLbl = new QLabel("Disconnected",this);
     globeTempSatusLbl = new QLabel("Disconnected",this);
     occupancySatusLbl = new QLabel("Disconnected",this);
-    layout->addWidget(indoorTempLbl,1,1);
-    layout->addWidget(indoorTemp,1,2);
-    layout->addWidget(indoorTempSatusLbl,1,3);
-    layout->addWidget(outdoorTempLbl,2,1);
-    layout->addWidget(outdoorTemp,2,2);
-    layout->addWidget(outdoorTempSatusLbl,2,3);
-    layout->addWidget(relHumidityLbl,3,1);
-    layout->addWidget(relHumidity,3,2);
-    layout->addWidget(relHumiditySatusLbl,3,3);
-    layout->addWidget(globeTempLbl,4,1);
-    layout->addWidget(globeTemp,4,2);
-    layout->addWidget(globeTempSatusLbl,4,3);
-    layout->addWidget(occupancyLbl,5,1);
-    layout->addWidget(occupancy,5,2);
-    layout->addWidget(occupancySatusLbl,5,3);
-    layout->addWidget(setpointTempLbl,6,1);
-    layout->addWidget(setpointTemp,6,2);
-    layout->addWidget(pmvLbl,7,1);
-    layout->addWidget(pmv,7,2);
-    layout->addWidget(heatCoolOutputLbl,8,1);
-    layout->addWidget(heatCoolOutput,8,2);
-    layout->addWidget(backButton,0,3);
+    //Increase size of font
+    QFont font = indoorTempLbl->font();
+    font.setPointSize(20);
+    indoorTempLbl->setFont(font);
+    outdoorTempLbl->setFont(font);
+    relHumidityLbl->setFont(font);
+    globeTempLbl->setFont(font);
+    occupancyLbl->setFont(font);
+    setpointTempLbl->setFont(font);
+    pmvLbl->setFont(font);
+    heatCoolOutputLbl->setFont(font);
+    indoorTempSatusLbl->setFont(font);
+    outdoorTempSatusLbl->setFont(font);
+    relHumiditySatusLbl->setFont(font);
+    globeTempSatusLbl->setFont(font);
+    occupancySatusLbl->setFont(font);
+    layout->addWidget(indoorTempLbl,0,1);
+    layout->addWidget(indoorTemp,0,2);
+    layout->addWidget(indoorTempSatusLbl,0,3);
+    layout->addWidget(outdoorTempLbl,1,1);
+    layout->addWidget(outdoorTemp,1,2);
+    layout->addWidget(outdoorTempSatusLbl,1,3);
+    layout->addWidget(relHumidityLbl,2,1);
+    layout->addWidget(relHumidity,2,2);
+    layout->addWidget(relHumiditySatusLbl,2,3);
+    layout->addWidget(globeTempLbl,3,1);
+    layout->addWidget(globeTemp,3,2);
+    layout->addWidget(globeTempSatusLbl,3,3);
+    layout->addWidget(occupancyLbl,4,1);
+    layout->addWidget(occupancy,4,2);
+    layout->addWidget(occupancySatusLbl,4,3);
+    layout->addWidget(setpointTempLbl,5,1);
+    layout->addWidget(setpointTemp,5,2);
+    layout->addWidget(pmvLbl,6,1);
+    layout->addWidget(pmv,6,2);
+    layout->addWidget(heatCoolOutputLbl,7,1);
+    layout->addWidget(heatCoolOutput,7,2);
+    layout->addWidget(backButton,6,0,2,1);
     this->setLayout(layout);
 }
 
