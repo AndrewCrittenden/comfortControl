@@ -9,6 +9,8 @@ serverCOMFORT::~serverCOMFORT()
 
 }
 
+const int tempUpdateTime = 10000;
+
 // Call this function after instancing the object in a thread (should be thread safe)
 void serverCOMFORT::serverOperation() {
     if (setNetworkInterface() == false) return;
@@ -32,6 +34,7 @@ void serverCOMFORT::serverOperation() {
         // Timer before new data refresh
         // Check if authentication bool is pressed:
         chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+		chrono::high_resolution_clock::time_point send_ms = chrono::high_resolution_clock::now();
         int ms = 0;
         //int last_print_time = 0;
         while (ms < gatherFrequency) {
@@ -51,6 +54,7 @@ void serverCOMFORT::serverOperation() {
 
 			// TODO: Set error flags with Andrew?
 			if (outData_toSend) {
+				send_ms = chrono::high_resolution_clock::now();
 				sendData();
 				//outData_toSend = false;
 			}
@@ -66,8 +70,13 @@ void serverCOMFORT::serverOperation() {
 
         checkSensorReady();
         dataRequest();
-        //outData.output = 10.34;
-        //cout << "__-______-_____--_-r-23-34gt-43g-hg54h54-h54h-54h-45h-45h4-" << endl;
+
+		if (chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - send_ms).count() >= tempUpdateTime) {
+			cout << "Send Data'ing" << endl;
+			//outData.output = 10.34;
+			sendData();
+			send_ms = chrono::high_resolution_clock::now();
+		}
 
         printNodeCOMFORT();
     }
@@ -571,12 +580,13 @@ void serverCOMFORT::sendData() {
 
         const string outputData = "Output Data:";
 
-        CryptoPP::byte sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(uint32_t) + sizeof(RTCPlain) + sizeof(outData)];
+        CryptoPP::byte sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(uint32_t) + sizeof(RTCPlain) + sizeof(outData) + sizeof(double)];
 		memcpy(sendBuff, UniqueIdentifier.c_str(), UniqueIdentifier.length());
 		memcpy(&sendBuff[UniqueIdentifier.length()], outputData.c_str(), outputData.length());
         dataOut temp = buffOut.GetPublicBuffer();
         memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length()], &temp, sizeof(outData));
-		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(outData)], &(it->counter), sizeof(uint32_t));
+		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(outData)], &inDataBuf.indoor, sizeof(double));
+		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(outData) + sizeof(double)], &(it->counter), sizeof(uint32_t));
 		memcpy(&sendBuff[sizeof(sendBuff) - sizeof(RTCPlain)], RTCPlain, sizeof(RTCPlain));
 
 		vector<uint8_t> cipherText;
