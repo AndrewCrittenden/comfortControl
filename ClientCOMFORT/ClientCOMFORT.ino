@@ -17,14 +17,6 @@
 //#define OCCUPANCY
 //#define OUTPUTNODE
 
-
- #define SPIWIFI       SPI  // The SPI port
-#define SPIWIFI_SS    13   // Chip select pin
-#define ESP32_RESETN  12   // Reset pin
-#define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
-#define ESP32_GPIO0   -1 
-
-
 // 2) Define your pins for the WiFi Module (See comments on each define)
 /* 
 #define SPIWIFI       SPI  // The SPI port
@@ -33,9 +25,15 @@
 #define SPIWIFI_ACK   7   // a.k.a BUSY or READY pin
 #define ESP32_GPIO0   -1 
 */
+ #define SPIWIFI       SPI  // The SPI port
+#define SPIWIFI_SS    13   // Chip select pin
+#define ESP32_RESETN  12   // Reset pin
+#define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
+#define ESP32_GPIO0   -1 
+
 
 // 3) Change DEBUG to 0 when using without SERIAL printouts (i.e. in normal use)
-#define DEBUG 0
+#define DEBUG 1
 
 // 4) Ensure DEVICE_TYPE String is set to be the DEFINED name of your sensor (Caps sensitive, make sure it matches perfectly)
 // Capped at 16 bytes, the rest will get cut off in runtime if you go over
@@ -108,6 +106,7 @@
 #ifdef OUTPUTNODE
   struct responseData {
     double powerIn;
+    double tempIn;
   };
 #endif
 
@@ -133,6 +132,7 @@ int onTimerLoop() {
 void onDataEdge() {
   
 }
+
 //--------------------------------FUNCTIONS FOR INPUT NODES------------------------------------------------------///
 
  // must return a responseData containing the data to send to the server
@@ -789,7 +789,13 @@ bool dataRefreshReceived(WiFiClient cl) {
          }
          Serial.println();
   int pingSize = AES_Decrypt((uint8_t *)buffer, (uint8_t *)buffer, bytesReceived);
-
+  byte testTime[6];
+  
+  if(pingSize != sizeof(UniqueIdentifier)-1+sizeof(dataOutput)-1+sizeof(counter)+sizeof(responseData)+sizeof(testTime)) {
+    Serial.println("Incorrect size.");
+    return false;
+  }
+  
   // Compare: Counter, Identifier, & dataOutput
   if (memcmp(UniqueIdentifier,buffer,sizeof(UniqueIdentifier)-1) ||
      memcmp(dataOutput,&buffer[sizeof(UniqueIdentifier)-1],sizeof(dataOutput)-1) ||
@@ -804,7 +810,6 @@ bool dataRefreshReceived(WiFiClient cl) {
   }
 
   // Compare the time stamp... if it is greater than 5 seconds, scrap it. If it is greater than 2, but less than 5 seconds, replace it.
-  byte testTime[6];
   memcpy(testTime,&buffer[sizeof(UniqueIdentifier)-1+sizeof(dataOutput)-1+sizeof(counter)+sizeof(responseData)],sizeof(testTime));
   tm tme;
   tme.tm_year = 116 + testTime[2];
@@ -916,7 +921,12 @@ bool dataRequestReceived(WiFiClient cl) {
          }
          Serial.println();
   int pingSize = AES_Decrypt((uint8_t *)buffer, (uint8_t *)buffer, bytesReceived);
-
+  
+  if(pingSize != sizeof(UniqueIdentifier)-1+sizeof(dataRequest)-1+6+sizeof(counter)) {
+    Serial.println("Incorrect size.");
+    return false;
+  }
+  
   if (memcmp(UniqueIdentifier,buffer,sizeof(UniqueIdentifier)-1) ||
      memcmp(dataRequest,&buffer[sizeof(UniqueIdentifier)-1],sizeof(dataRequest)-1) ||
       (*((uint32_t *)&buffer[sizeof(UniqueIdentifier)+sizeof(dataRequest)-2]) != counter)) {
