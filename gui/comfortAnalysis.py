@@ -33,8 +33,8 @@ import psutil
 #outdoorTemp = 76.83 #tout, outdoor temperature, float
 #occupancy = False # = 1 #occupancy
 #pmv = 0
-#setpoint_temp = desiredTemp
-#setpoint_temp_prev= desiredTemp
+setpoint_temp = desiredTemp
+setpoint_temp_prev= desiredTemp
 
 def get_first_key(dictionary):
     for key in dictionary:
@@ -311,18 +311,7 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
                     #print("        comfortAnalysis.py","PMV selected")
                     #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
                     #print("        comfortAnalysis.py","setpoint selected:")
-                    #print("        comfortAnalysis.py",setpoint_temp)
-            
-        
-                setpoint_temp = round(setpoint_options[pmv_minimum_index], 1)
-                #print("PMV selected")
-                #print(pmv_options[pmv_minimum_index])
-                #print("setpoint selected:")
-                #print(setpoint_temp)
-                #print("        comfortAnalysis.py","PMV minimum")
-                #print("        comfortAnalysis.py",pmv_minimum)
-                #print("        comfortAnalysis.py","setpoint selected:")
-                #print("        comfortAnalysis.py",setpoint_temp)
+                    #print("        comfortAnalysis.py",setpoint_temp,
          
     else: 
         #print("        comfortAnalysis.py",'Error Detected. Operating to entered Desired Temp')
