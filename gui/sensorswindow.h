@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QDebug>
 #include <QLabel>
+#include <QProgressBar>
 
 class SensorsWindow : public QWidget
 {
@@ -27,6 +28,15 @@ public:
     QLabel *relHumiditySatusLbl;
     QLabel *globeTempSatusLbl;
     QLabel *occupancySatusLbl;
+    QPushButton *authenticateButton;
+    QPushButton *clearNodeButton;
+    QProgressBar *refreshBar;
+    QLabel *indoorUnits;
+    QLabel *outdoorUnits;
+    QLabel *relHumidityUnits;
+    QLabel *globeUnits;
+    QLabel *setpointTempUnits;
+    QLabel *applianceUnits;
 
 private:
     QGridLayout *layout;

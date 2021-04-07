@@ -26,6 +26,7 @@ public:
     QLCDNumber *indoorTemp;
     QLCDNumber *outdoorTemp;
     QLCDNumber *relHumidity;
+    QLabel *applianceState;
 
 private:
     QGridLayout *layout;
@@ -36,6 +37,10 @@ private:
     QLabel *homeImage;
     QLabel *outdoorImage;
     QLabel *humidityImage;
+    QLabel *desiredTempUnits;
+    QLabel *indoorTempUnits;
+    QLabel *outdoorTempUnits;
+    QLabel *relHumidityUnits;
 
 public Q_SLOTS:
     void activityChanged(QString value);

@@ -15,8 +15,6 @@ public:
     explicit settingswindow(QWidget *parent = nullptr);
     ~settingswindow();
     QPushButton *backButton;
-    QPushButton *authenticateButton;
-    QPushButton *clearNodeButton;
     QSlider *gatherFreqSlider;
     QLCDNumber *gatherFreqDsp;
 

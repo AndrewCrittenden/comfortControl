@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*ini
     stack->addWidget(sensors);
     stack->addWidget(settings);
     stack->setCurrentWidget(home);
-    stack->setWindowState(Qt::WindowFullScreen);
+    //stack->setWindowState(Qt::WindowFullScreen);
 }
 
 void MainWindow::setupWindow(){
@@ -60,8 +60,8 @@ void MainWindow::setupWindow(){
     QObject::connect(home->sensorsButton, &QPushButton::clicked, [=] { setWindow(sensors); });
     QObject::connect(home->settingsButton, &QPushButton::clicked, [=] { setWindow(settings); });
     QObject::connect(home->exitButton, &QPushButton::clicked, [=] { stack->close(); });
-    QObject::connect(settings->authenticateButton, &QPushButton::clicked, [=] { server.authenticate = true; });
-    QObject::connect(settings->clearNodeButton, &QPushButton::clicked, [=] { server.clearNode = true; });
+    QObject::connect(sensors->authenticateButton, &QPushButton::clicked, [=] { server.authenticate = true; });
+    QObject::connect(sensors->clearNodeButton, &QPushButton::clicked, [=] { server.clearNode = true; });
     server.gatherFrequency = 20000;
     QObject::connect(settings->gatherFreqSlider, &QSlider::valueChanged, this, &MainWindow::updateGatherFreq);
     //Refresh measurement's from serverCOMFORT
@@ -118,7 +118,8 @@ void MainWindow::updatePMV(bool doUpdate){
     pValue = PyObject_CallObject(pFunc, pArgs);
     double pyPmv, pySetpoint;
     PyArg_ParseTuple(pValue,"d|d",&pyPmv,&pySetpoint);
-    //printf("Result of call: %f, %f\n",pyPmv,pySetpoint);
+    qDebug() << "Sent" << g_indoorTemp << "," << g_globeTemp<< "," << g_relHumidity<< "," << g_outdoorTemp<< "," << g_occupancy<< "," << g_desiredTemp<< "," << g_activityLevel.c_str() << "\n";
+    printf("Recieved: pmv=%f, setpoint=%f\n",pyPmv,pySetpoint);
     if(doUpdate){
         g_pmv = pyPmv;
         g_setpoint_temperature = pySetpoint;
@@ -160,7 +161,7 @@ void MainWindow::refreshMeasurements(){
         }
     }
     //If all of the sensors are connected
-    if(true){ //server.sensorsReady){ //TODO remove this
+    if(server.sensorsReady){
         //Calculate PMV
         updatePMV(true);
         //Run PID controller
@@ -168,6 +169,15 @@ void MainWindow::refreshMeasurements(){
         controller.setCurrentTemperature(newData.indoor);
         g_heatCoolOutput = controller.forceUpdate();
         sensors->heatCoolOutput->display(g_heatCoolOutput);
+        if(g_heatCoolOutput == 0){
+            home->applianceState->setText("Fridge Off");
+        }
+        else if(g_heatCoolOutput > 0){
+            home->applianceState->setText("Heating");
+        }
+        else{
+            home->applianceState->setText("Cooling");
+        }
         //Send wattage to fridge
         dataOut toSend;
         toSend.output = g_heatCoolOutput;

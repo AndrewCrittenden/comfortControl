@@ -11,6 +11,8 @@
 #include <thread>
 #include <QTime>
 #include <QtQuickControls2/QQuickStyle>
+#include <QQmlApplicationEngine>
+//#include <QtQuickControls2/QtQuickControls2>
 
 bool g_isComfortable;
 double g_setpoint_temperature;
@@ -31,6 +33,12 @@ int tick_get() {  // TODO Fix this to work with PID
 
 int main(int argc, char *argv[])
 {
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QGuiApplication app(argc, argv);
+    QQuickStyle::setStyle("Universal");
+    QQmlApplicationEngine engine;
+    engine.load(QUrl("qrc:/main.qml"));
+
     //Initialize global variables with default values
     g_isComfortable = true;
     g_setpoint_temperature = 72;
@@ -43,7 +51,7 @@ int main(int argc, char *argv[])
     g_pmv = 0;
     g_desiredTemp = 72;
     g_activityLevel = "resting";
-    //QQuickStyle::setStyle("Material");
+
     QApplication a(argc, argv);
     MainWindow w;
     //Run GUI application
