@@ -73,8 +73,8 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
     
     #MRT Calculation
     tr = t_mrt(tg, tdb, v, d=0.075, emissivity=0.95)
-    print("tr:")
-    print(tr)
+    #print("tr:")
+    #print(tr)
     #operative temp calulation
     op = 0.5 * (tdb + tr)
     #print("        comfortAnalysis.py",op)
