@@ -792,7 +792,10 @@ bool dataRefreshReceived(WiFiClient cl) {
   byte testTime[6];
   
   if(pingSize != sizeof(UniqueIdentifier)-1+sizeof(dataOutput)-1+sizeof(counter)+sizeof(responseData)+sizeof(testTime)) {
-    Serial.println("Incorrect size.");
+    Serial.print("Incorrect size of ");
+    Serial.println(pingSize);
+    Serial.print(". Expected ");
+    Serial.println(sizeof(UniqueIdentifier)-1+sizeof(dataOutput)-1+sizeof(counter)+sizeof(responseData)+sizeof(testTime));
     return false;
   }
   
@@ -923,7 +926,10 @@ bool dataRequestReceived(WiFiClient cl) {
   int pingSize = AES_Decrypt((uint8_t *)buffer, (uint8_t *)buffer, bytesReceived);
   
   if(pingSize != sizeof(UniqueIdentifier)-1+sizeof(dataRequest)-1+6+sizeof(counter)) {
-    Serial.println("Incorrect size.");
+    Serial.print("Incorrect size of ");
+    Serial.println(pingSize);
+    Serial.print(". Expected ");
+    Serial.println(sizeof(UniqueIdentifier)-1+sizeof(dataRequest)-1+6+sizeof(counter));
     return false;
   }
   
@@ -1065,16 +1071,16 @@ uint32_t AES_Encrypt(const uint8_t* plaintext, uint8_t * cipherout, size_t sizeT
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Returns length of cipherout
-uint32_t AES_Decrypt(const uint8_t* ciphertext, uint8_t * output, size_t size) {
+uint32_t AES_Decrypt(const uint8_t* ciphertext, uint8_t * output, size_t sizes) {
   //byte buffer[1024];
   //memset(buffer,0,sizeT+16);
   //memcpy(cipherout, plaintext, sizeT);
-  if (size & 15 || size == 0) {
+  if (sizes & 15 || sizes == 0) {
     Serial.println("Invalid Ciphertext Size!");
     return 0;
   }
-  aes_cbc_decrypt_256b(ciphertext, output, size, IV);
-  return size - (output[size-1]);
+  aes_cbc_decrypt_256b(ciphertext, output, sizes, IV);
+  return sizes - (output[sizes-1]);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
