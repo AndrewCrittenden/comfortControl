@@ -258,6 +258,7 @@ void onDataReceived(responseData inData) {
   float IoutCooling = 0;
 
   uint32_t clockTime = RTC->MODE2.CLOCK.reg;
+  tm tme;
   tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
   tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
   tme.tm_mday = (clockTime >> 17 & 0x1F);
