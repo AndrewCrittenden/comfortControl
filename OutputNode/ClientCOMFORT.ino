@@ -114,6 +114,7 @@
 // YOUR CODE HERE
 float T0 = -1;
 double Tambient = 298.15;
+uint32_t lastReceiveTime;
 // place code here that you would like to run when the node turns on
 void setupCOMFORT() {
   analogReadResolution(12);  //set read resolution to 12bit
@@ -256,12 +257,26 @@ void onDataReceived(responseData inData) {
   float Vmode = 0;
   float IoutCooling = 0;
 
+  uint32_t clockTime = RTC->MODE2.CLOCK.reg;
+  tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
+  tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
+  tme.tm_mday = (clockTime >> 17 & 0x1F);
+  tme.tm_hour = (clockTime >> 12 & 0x1F);
+  tme.tm_min = (clockTime >> 6 & 0x3F);
+  tme.tm_sec = (clockTime & 0x3F);
+  time_t unix = mktime((tm *)&tme);
+  if (T0 == -1) {
+   lastReceiveTime = unix-1;
+  }
+  int diff = (lastReceiveTime > unix) ? ((int)lastReceiveTime - (int)unix) : ((int)unix - (int)lastReceiveTime);
+ 
   if(T0 == -1)  {
     T0 = T1;  
   }
   float Hdeli = Mta * (T1 - T0);
+  
 
-  if(abs(Hdeli) < abs(inData.powerIn * 60) || (Hdeli > 0 ^ inData.powerIn > 0) && abs(inData.powerIn) > 0.0001) { //output is needed
+  if(abs(Hdeli) < abs(inData.powerIn * diff) || (Hdeli > 0 ^ inData.powerIn > 0) && abs(inData.powerIn) > 0.0001) { //output is needed
     
     if(inData.powerIn < 0)  {     //if cooling
       //check endpoint and derivative
