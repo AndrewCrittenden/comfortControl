@@ -64,10 +64,12 @@ void serverCOMFORT::serverOperation() {
             //    cout << ms << endl;
             //    last_print_time = (ms/1000);
             //}
+
+			perc_complete = ms / gatherFrequency;
         }
 
         cout << "Timer done." << endl;
-
+		perc_complete = 0.0;
         checkSensorReady();
         dataRequest();
 
@@ -584,8 +586,8 @@ void serverCOMFORT::sendData() {
 		memcpy(sendBuff, UniqueIdentifier.c_str(), UniqueIdentifier.length());
 		memcpy(&sendBuff[UniqueIdentifier.length()], outputData.c_str(), outputData.length());
         dataOut temp = buffOut.GetPublicBuffer();
-        memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length()], &temp, sizeof(outData));
-		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(outData)], &inDataBuf.indoor, sizeof(double));
+        memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length()], &temp, sizeof(temp));
+		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(temp)], &inDataBuf.indoor, sizeof(double));
 		memcpy(&sendBuff[UniqueIdentifier.length() + outputData.length() + sizeof(outData) + sizeof(double)], &(it->counter), sizeof(uint32_t));
 		memcpy(&sendBuff[sizeof(sendBuff) - sizeof(RTCPlain)], RTCPlain, sizeof(RTCPlain));
 
@@ -595,7 +597,7 @@ void serverCOMFORT::sendData() {
 		if (retSize != (int)cipherText.size()) {
 			cout << "Error in data output" << endl;
 		}
-		memcpy(&it->data[0], &outData, it->data.size());
+		memcpy(&it->data[0], &temp, it->data.size());
     }
 
 	chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();

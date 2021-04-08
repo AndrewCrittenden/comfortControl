@@ -72,6 +72,7 @@ struct sensorReady {
     bool outdoor;
     bool globe;
     bool relHumidity;
+	bool output;
 };
 
 struct dataOut {
@@ -128,6 +129,7 @@ public:
     volatile bool active = true;
     volatile bool authenticate = false;
     volatile bool clearNode = false;
+	double perc_complete = 0.0;
 
 Q_SIGNALS:
     void inData_receivedChanged(bool value);
