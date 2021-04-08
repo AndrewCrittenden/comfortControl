@@ -43,7 +43,7 @@ def get_first_key(dictionary):
 
 def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
     start_time = time.time()
-    #clothing level prediction
+   #clothing level prediction
     if tout >= 75: #summer
         icl = 0.5 # clo_typical_ensembles('Typical summer indoor clothing') # calculate total clothing insulation
     if tout < 75 and tout >= 60: #spring
@@ -132,21 +132,21 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
 
         setpoint_options = np.arange(60,80, 0.1) # want to test setpoints between 60 and 80
         pmv_options = np.zeros(len(setpoint_options)) #will run a hypothetical PMV calc with that temperature to select the best one
-        #global setpoint_temp_prev #needs to be accessabile in all parts of the code
+        global setpoint_temp_prev #needs to be accessabile in all parts of the code
         
         if occupancy: #someone is home Occupancy = True
             if pmv >= -0.5 and pmv <= 0.5: 
                 pmv_bool = 1 #comfort conditions met
-                #print("Comfort Conditions are met")
-                #print(pmv)
+                print("Comfort Conditions are met")
+                print(pmv)
                 #print("        comfortAnalysis.py","Comfort Conditions met")
                 #print("        comfortAnalysis.py",pmv)
                 setpoint_temp = setpoint_temp_prev #maintain the same temperature
                 
             else: 
                 pmv_bool = 0 #comfort conditons are not met
-                #print("Comfort conditions NOT met")
-                #print(pmv)
+                print("Comfort conditions NOT met")
+                print(pmv)
                 #print("        comfortAnalysis.py","Comfort Conditions NOT met")
                 #print("        comfortAnalysis.py",pmv)
                 
@@ -170,10 +170,10 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
                                 pmv_minimum_index = x
         
                 setpoint_temp = round(setpoint_options[pmv_minimum_index],1 )
-                #print("PMV selected")
-                #print(pmv_options[pmv_minimum_index])
-                #print("setpoint selected:")
-                #print(setpoint_temp)
+                print("PMV selected")
+                print(pmv_options[pmv_minimum_index])
+                print("setpoint selected:")
+                print(setpoint_temp)
                 #print("        comfortAnalysis.py","PMV selected")
                 #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
                 #print("        comfortAnalysis.py","setpoint selected:")
@@ -181,12 +181,12 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
             
 
         else: #someone is not home Occupancy = False
-            #print("No one home")
+            print("No one home")
             #print("        comfortAnalysis.py","No one home")
             if pmv >= -1.0 and pmv <= 1.0:
                 pmv_bool = 1 #comfort conditions met
-                #print("comfort conditions met")
-                #print(pmv)
+                print("comfort conditions met")
+                print(pmv)
                 #print("        comfortAnalysis.py","Comfort Conditions met")
                 #print("        comfortAnalysis.py",pmv)
                 setpoint_temp = setpoint_temp_prev #maintain the same temperature
@@ -212,10 +212,10 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
                                 pmv_minimum_index = x
                     
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1)
-                 #   print("PMV selected")
-                 #   print(pmv_options[pmv_minimum_index])
-                  #  print("setpoint selected:")
-                   # print(setpoint_temp)
+                    print("PMV selected")
+                    print(pmv_options[pmv_minimum_index])
+                    print("setpoint selected:")
+                    print(setpoint_temp)
                     #print("        comfortAnalysis.py","PMV selected")
                     #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
                     #print("        comfortAnalysis.py","setpoint selected:")
@@ -242,10 +242,10 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
         
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
                     
-                   # print("PMV selected")
-                    #print(pmv_options[pmv_minimum_index])
-                    #print("setpoint selected:")
-                    #print(setpoint_temp)
+                    print("PMV selected")
+                    print(pmv_options[pmv_minimum_index])
+                    print("setpoint selected:")
+                    print(setpoint_temp)
                     #print("        comfortAnalysis.py","PMV selected")
                     #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
                     #print("        comfortAnalysis.py","setpoint selected:")
@@ -275,10 +275,10 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
                                 pmv_minimum_index = x
                     
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
-                   # print("PMV selected")
-                   # print(pmv_options[pmv_minimum_index])
-                   # print("setpoint selected:")
-                   # print(setpoint_temp)
+                    print("PMV selected")
+                    print(pmv_options[pmv_minimum_index])
+                    print("setpoint selected:")
+                    print(setpoint_temp)
                     #print("        comfortAnalysis.py","PMV selected")
                     #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
                     #print("        comfortAnalysis.py","setpoint selected:")
@@ -304,14 +304,15 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
                                 pmv_minimum_index = x
         
                     setpoint_temp = round(setpoint_options[pmv_minimum_index], 1) 
-                    #print("PMV selected")
-                    #print(pmv_options[pmv_minimum_index])
-                    #print("setpoint selected:")
-                    #print(setpoint_temp)
+                    print("PMV selected")
+                    print(pmv_options[pmv_minimum_index])
+                    print("setpoint selected:")
+                    print(setpoint_temp)
                     #print("        comfortAnalysis.py","PMV selected")
                     #print("        comfortAnalysis.py",pmv_options[pmv_minimum_index])
                     #print("        comfortAnalysis.py","setpoint selected:")
-                    #print("        comfortAnalysis.py",setpoint_temp,
+                    #print("        comfortAnalysis.py",setpoint_temp)
+            
          
     else: 
         #print("        comfortAnalysis.py",'Error Detected. Operating to entered Desired Temp')
@@ -320,8 +321,6 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
         pmv =  0.00
         
     setpoint_temp_prev = setpoint_temp #saves the previous setpoint
-    
-    
     #print("        comfortAnalysis.py",pmv, setpoint_temp)
     #print("        comfortAnalysis.py","ComfortAnalysis Code took", time.time() - start_time, "to run")
     #return (pmv,pmv_bool,setpoint_temp, error_1, error_2, error_3, error_4, error_5, error_6, error_7)
