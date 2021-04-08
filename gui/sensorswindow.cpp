@@ -39,6 +39,7 @@ SensorsWindow::SensorsWindow(QWidget *parent) : QWidget(parent)
     relHumiditySatusLbl = new QLabel("Disconnected",this);
     globeTempSatusLbl = new QLabel("Disconnected",this);
     occupancySatusLbl = new QLabel("Disconnected",this);
+    outputStatus = new QLabel("Disconnected",this);
     authenticateButton = new QPushButton("Connect\nNodes", this);
     authenticateButton->setFixedSize(BUTTON_SIZE);
     clearNodeButton = new QPushButton("Clear\nNodes", this);
@@ -74,6 +75,7 @@ SensorsWindow::SensorsWindow(QWidget *parent) : QWidget(parent)
     relHumiditySatusLbl->setFont(font);
     globeTempSatusLbl->setFont(font);
     occupancySatusLbl->setFont(font);
+    outputStatus->setFont(font);
     occupancy->setFont(font);
     authenticateButton->setFont(font);
     clearNodeButton->setFont(font);
@@ -107,6 +109,7 @@ SensorsWindow::SensorsWindow(QWidget *parent) : QWidget(parent)
     layout->addWidget(heatCoolOutputLbl,7,1);
     layout->addWidget(heatCoolOutput,7,2);
     layout->addWidget(applianceUnits,7,3);
+    //layout->addWidget(outputStatus,7,4);
     layout->addWidget(authenticateButton,0,0,2,1);
     layout->addWidget(clearNodeButton,3,0,2,1);
     layout->addWidget(backButton,6,0,2,1);

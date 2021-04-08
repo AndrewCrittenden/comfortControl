@@ -44,6 +44,7 @@ public Q_SLOTS:
     void relHumStatus(bool value);
     void globeStatus(bool value);
     void occupancyStatus(bool value);
+    void outputStatus(bool value);
 
 };
 

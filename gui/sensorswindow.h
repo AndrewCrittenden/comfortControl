@@ -28,6 +28,7 @@ public:
     QLabel *relHumiditySatusLbl;
     QLabel *globeTempSatusLbl;
     QLabel *occupancySatusLbl;
+    QLabel *outputStatus;
     QPushButton *authenticateButton;
     QPushButton *clearNodeButton;
     QProgressBar *refreshBar;

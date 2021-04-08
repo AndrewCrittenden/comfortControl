@@ -138,6 +138,7 @@ Q_SIGNALS:
     void statusRelHumChanged(bool value);
     void statusGlobeChanged(bool value);
     void statusOccupancyChanged(bool value);
+    void statusOutputChanged(bool value);
 
 public Q_SLOTS:
     void setInData_received(bool value);
@@ -146,6 +147,7 @@ public Q_SLOTS:
     void setStatusRelHum(bool value);
     void setStatusGlobe(bool value);
     void setStatusOccupancy(bool value);
+    void setStatusOutput(bool value);
 
 private:
     // AES Functions

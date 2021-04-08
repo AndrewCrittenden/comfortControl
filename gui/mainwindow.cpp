@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*ini
     stack->addWidget(sensors);
     stack->addWidget(settings);
     stack->setCurrentWidget(home);
-    //stack->setWindowState(Qt::WindowFullScreen);
+    stack->setWindowState(Qt::WindowFullScreen);
 }
 
 void MainWindow::setupWindow(){
@@ -71,7 +71,7 @@ void MainWindow::setupWindow(){
     QObject::connect(&server, &serverCOMFORT::statusRelHumChanged, this, &MainWindow::relHumStatus);
     QObject::connect(&server, &serverCOMFORT::statusGlobeChanged, this, &MainWindow::globeStatus);
     QObject::connect(&server, &serverCOMFORT::statusOccupancyChanged, this, &MainWindow::occupancyStatus);
-
+    QObject::connect(&server, &serverCOMFORT::statusOutputChanged, this, &MainWindow::outputStatus);
 
     //Start serverCOMFORT thread
     QFuture<void> future = QtConcurrent::run([this] {
@@ -153,6 +153,7 @@ void MainWindow::refreshMeasurements(){
     }
     if(server.sensorStatus.occupancy){
         g_occupancy = newData.occupancy;
+        qDebug() << "\n\n\nOCCUPANCY IS " << g_occupancy << "--------------------\n\n\n";
         if (g_occupancy) {
                sensors->occupancy->setText("Occupied");
         }
@@ -234,6 +235,14 @@ void MainWindow::occupancyStatus(bool value){
     }
     else{
         sensors->occupancySatusLbl->setText("Disconnected");
+    }
+}
+void MainWindow::outputStatus(bool value){
+    if(value){
+        sensors->outputStatus->setText("Connected");
+    }
+    else{
+        sensors->outputStatus->setText("Disconnected");
     }
 }
 

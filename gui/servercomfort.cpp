@@ -485,6 +485,27 @@ void serverCOMFORT::dataRequest() {
         }
 
         if (*(uint32_t *)&plainText[dataResponse.length()+it->data.size()] != it->counter) {
+            it->connected = false;
+            switch(it->type) {
+                case nodeTypeDef::Occupancy:
+                    setStatusOccupancy(false);
+                break;
+                case nodeTypeDef::Indoor:
+                    setStatusIndoor(false);
+                break;
+                case nodeTypeDef::Outdoor:
+                    setStatusOutdoor(false);
+                break;
+                case nodeTypeDef::Globe:
+                    setStatusGlobe(false);
+               break;
+                case nodeTypeDef::Rel_Humidity:
+                    setStatusRelHum(false);
+                break;
+                default:
+
+                break;
+            }
             cout << "Counter " << *(uint32_t *)&plainText[dataResponse.length()] << "does not match " << it->counter << endl;
             cout << "Disabling node " << it->ID << endl;
 			continue;
@@ -624,11 +645,13 @@ void serverCOMFORT::sendData() {
 		case -1:
 			cout << "Oh no..." << endl;
 			it->connected = false;
+            setStatusOutput(false);
 			continue;
 
 		case 0:
 			cout << "Nothing to read..." << endl;
 			it->connected = false;
+            setStatusOutput(false);
 			continue;
 
 		default:
@@ -638,6 +661,7 @@ void serverCOMFORT::sendData() {
 
 		if (recvSize == 0) {
 			it->connected = false;
+            setStatusOutput(false);
 			return;
 		}
 
@@ -645,6 +669,7 @@ void serverCOMFORT::sendData() {
         if (recvSize % 16) {
             cout << "Not a multiple of 16. Disabling Node " << it->ID << endl;
             it->connected = false;
+            setStatusOutput(false);
             continue;
         }
 
@@ -652,6 +677,7 @@ void serverCOMFORT::sendData() {
 		if (plainSize != (int)sizeof(recvBuff) - 16) {
 			cout << "Node " << it->ID << " sent incorrect packet size." << endl;
 			it->connected = false;
+            setStatusOutput(false);
 			continue;
 		}
 
@@ -659,6 +685,7 @@ void serverCOMFORT::sendData() {
 		if (memcmp(&plainText[0], UniqueIdentifier.c_str(), UniqueIdentifier.length())) {
 			cout << "Node " << it->ID << " sent incorrect Unique Identifier." << endl;
 			it->connected = false;
+            setStatusOutput(false);
 			continue;
 		}
 
@@ -666,11 +693,14 @@ void serverCOMFORT::sendData() {
 		if (memcmp(&plainText[UniqueIdentifier.length()], dataReceived.c_str(), dataReceived.length())) {
 			cout << "Node " << it->ID << " sent incorrect DataReceived Identifier." << endl;
 			it->connected = false;
+            setStatusOutput(false);
 			continue;
 		}
 
 		// Check Counter Value:
 		if (*(uint32_t *)&plainText[UniqueIdentifier.length() + dataReceived.length()] != it->counter) {
+            it->connected = false;
+            setStatusOutput(false);
 			cout << "Counter " << *(uint32_t *)&plainText[UniqueIdentifier.length() + dataReceived.length()] 
 				 << "does not match " << it->counter << endl;
 			cout << "Disabling node " << it->ID << endl;
@@ -694,6 +724,7 @@ void serverCOMFORT::sendData() {
 		if (difference > 5) {
 			cout << "Node " << it->ID << " sent invalid timestamp." << endl;
 			it->connected = false;
+            setStatusOutput(false);
 			continue;
 		}
 		it->counter++;
@@ -807,6 +838,9 @@ void serverCOMFORT::authProcess(uint8_t * receiveBuf, size_t receiveBufSize) {
        break;
         case nodeTypeDef::Rel_Humidity:
             setStatusRelHum(true);
+        break;
+        case nodeTypeDef::Output:
+            setStatusOutput(true);
         break;
         case nodeTypeDef::Error:
             cout << "Type does not exist... cancelling." << endl;
@@ -925,6 +959,11 @@ void serverCOMFORT::setStatusOccupancy(bool value)
 {
     sensorStatus.occupancy = value;
     Q_EMIT statusOccupancyChanged(sensorStatus.occupancy);
+}
+void serverCOMFORT::setStatusOutput(bool value)
+{
+    sensorStatus.output = value;
+    Q_EMIT statusOccupancyChanged(sensorStatus.output);
 }
 
 // AES Functions

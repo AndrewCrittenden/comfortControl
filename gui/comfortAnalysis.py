@@ -25,16 +25,8 @@ import psutil
 # values to be returned by the comfort code: PMV, PMV_bool, error_1 to error_7 in bool, setpoint_temp. This is 10 things
 
 #Default initial value, updated when GUI runs
-#desiredTemp = 75.07 #float
-#activity = "resting" #string
-#indoorTemp= 76.83 #tdb, dry-bulb air temperature, [$^{\circ}$C], float
-#globeTemp= 77.99 #tg, globe temperature, float
-#relHumidity= 26.21 #rh, relative humidity, [%], float
-#outdoorTemp = 76.83 #tout, outdoor temperature, float
-#occupancy = False # = 1 #occupancy
-#pmv = 0
-setpoint_temp = desiredTemp
-setpoint_temp_prev= desiredTemp
+setpoint_temp = 72
+setpoint_temp_prev= 72
 
 def get_first_key(dictionary):
     for key in dictionary:
@@ -134,7 +126,7 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
         pmv_options = np.zeros(len(setpoint_options)) #will run a hypothetical PMV calc with that temperature to select the best one
         global setpoint_temp_prev #needs to be accessabile in all parts of the code
         
-        if occupancy: #someone is home Occupancy = True
+        if occupancy == False: #someone is home Occupancy = True
             if pmv >= -0.5 and pmv <= 0.5: 
                 pmv_bool = 1 #comfort conditions met
                 print("Comfort Conditions are met")
@@ -180,7 +172,7 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
                 #print("        comfortAnalysis.py",setpoint_temp)
             
 
-        else: #someone is not home Occupancy = False
+        else: #someone is not home Occupancy = True
             print("No one home")
             #print("        comfortAnalysis.py","No one home")
             if pmv >= -1.0 and pmv <= 1.0:
@@ -328,3 +320,4 @@ def comfortAnalysis(tdb, tg, rh, tout, occupancy, desiredTemp, activity):
     #END###########################################
 
 #print("        comfortAnalysis.py","Intialize code took", time.time() - initialize_time, "to run")
+#comfortAnalysis(78.9078, 81.9862, 35.7717, 82.5058, 1, 72, 0)

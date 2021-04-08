@@ -33,8 +33,25 @@ int tick_get() {  // TODO Fix this to work with PID
 
 int main(int argc, char *argv[])
 {
-    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QGuiApplication app(argc, argv);
+    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QApplication app(argc, argv);
+    app.setStyleSheet("QSlider::groove:horizontal {"
+                          "border: 1px solid #999999;"
+                          "height: 50px;"
+                          "background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #bbb, stop: 1 #bbf);"
+                          "margin: 2px 0;"
+                      "}"
+
+                      "QSlider::handle:horizontal {"
+                          "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);"
+                          "border: 1px solid #5c5c5c;"
+                          "width: 20px;"
+                          "margin-top: -20px;"
+                          "margin-bottom: -20px;"
+                          "border-radius: 3px;"
+                      "}"
+                      );
+
     QQuickStyle::setStyle("Universal");
     QQmlApplicationEngine engine;
     engine.load(QUrl("qrc:/main.qml"));
