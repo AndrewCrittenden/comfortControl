@@ -27,7 +27,7 @@ const float initial_max_heat = 5;
 const float initial_sample_time = 15000;
 
 //MainWindow is the controller used to switch between windows and close the application
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(74*initial_air_vol*1.8, 1.1111*initial_air_vol*1.8, 740*initial_air_vol*1.8, initial_max_cool, initial_max_heat, initial_sample_time)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), controller(0.1, 0, 0, initial_max_cool, initial_max_heat, initial_sample_time)
 {
     stack = new QStackedWidget;
     home = new HomeWindow;
