@@ -18,11 +18,11 @@ public:
         }
     }
     // main constructor: aIn is the alpha constant variable, cutoff controls whether the output will drop to zero when the output crosses 0
-    simpleLowPass(double aIn, bool cutoff = false) {
+    simpleLowPass(double aIn, bool cutoff = false, double initialOutput = 0) {
         this->a = aIn;
         this->cutoff = cutoff;
         for (int i = 0; i < arrSize; i++) {
-            mem[i] = 0;
+            mem[i] = initialOutput;
         }
     }
     // this function takes an input (the current filter input) and returns 
