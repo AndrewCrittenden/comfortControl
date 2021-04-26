@@ -20,7 +20,7 @@ public:
     std::pair<float,float> getOutputBounds();
     // sets the PID parameters, taking a tuple as input, with the first value as Kp, the second as Ki, and the last as Kd
     void setParameters(std::tuple<float,float,float> newParams);
-    // sets the PID parameters, returns a tuple as output, with the first value as Kp, the second as Ki, and the last as Kd
+    // gets the PID parameters, returns a tuple as output, with the first value as Kp, the second as Ki, and the last as Kd
     std::tuple<float,float,float> getParameters();
     // sets the PID maximum independently of the minimum, only input is the new maximum as a float
     void setMaxOutput(float newMax);
