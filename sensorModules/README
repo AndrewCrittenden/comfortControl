@@ -1,3 +1,21 @@
-This folder is for the arduino codes for th 5 sensor modules and wifi transfering codes
+This folder contains the arduino code for the 5 sensor modules.
 
-The sensors will send their data and then the centralized interface will do a logical check to see if the sensor data received is valid.
+____ contains the code for the globe temperature sensor
+
+____ contains the code for the occupancy (IR) sensor
+
+____ contains the code for the relative humidity sensor
+
+____ contains the code for the indoor and outdoor temperature sensor
+
+Each file contains code which implements the communication protocol developed by Tyler for our project. The only changes to the file required to implement a new sensor type are changing the node type at the top and making changes to the setupCOMFORT, onTimerLoop, and onDataEdge functions, as well as onDataRequest for input nodes or onDataReceived for output nodes. Their behavior is described briefly below, more detail is available in the code comments.
+
+setupCOMFORT: used for one-time setup, similar to Arduino's built-in setup() function
+
+onTimerLoop: this function may be used to perform tasks regularly, with a delay after each run equal to the value returned by the function as seconds
+
+onDataEdge: called immediately after data is sent or received by the node, can be used for time-consuming operations which should run once each time data is sent or receieved
+
+onDataRequest: called when data is requested, must return an instance of the responseData struct specified for the nodeType with data filled in
+
+onDataReceived: called when data is received, gets an instance of the responseData struct with data from the server as "inData"
