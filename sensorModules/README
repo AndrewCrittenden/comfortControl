@@ -8,7 +8,7 @@ clientCOMFORT_V6_RH contains the code for the relative humidity sensor
 
 ClientCOMFORT_Temp_Indoor and ClientCOMFORT_Temp contains the code for the indoor and outdoor temperature sensors
 
-Each code requires a .txt file with the network name and password called "arduino_secrets.txt". An example is shown which includes the network name and password for the router set up with the demonstration module.
+Each code requires a .h file with the network name and password called "arduino_secrets.h". An example is shown which includes the network name and password for the router set up with the demonstration module.
 
 Each file contains code which implements the communication protocol developed by the WiFi communication lead Tyler for our project. The only changes to the file required to implement a new sensor type are changing the node type at the top and making changes to the setupCOMFORT, onTimerLoop, and onDataEdge functions, as well as onDataRequest for input nodes or onDataReceived for output nodes. Their behavior is described briefly below, more detail is available in the code comments.
 
