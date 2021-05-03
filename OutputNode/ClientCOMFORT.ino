@@ -112,8 +112,8 @@
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // YOUR CODE HERE
-float T0 = -1;
-double Tambient = 298.15;
+float T0 = -1;               //set starting time to nonsense value
+double Tambient = 298.15;    //set ambient temp to 25 Celsius
 uint32_t lastReceiveTime;
 // place code here that you would like to run when the node turns on
 void setupCOMFORT() {
@@ -133,11 +133,11 @@ inline float calculateSeebeck(float Tinside, float Toutside)  {
   float SM;
   float DT = Toutside - Tinside;
   
-  if(DT == 0){
+  if(DT == 0){  //calculate the Seebeck when Tinside = Toutside
     SM = s1 + s2*Tinside + s3*pow(Tinside, 2) + s4*pow(Tinside, 3);
     SM*=127/71;
   }
-  else{
+  else{  //calculate the Seebeck when Tinside != Toutside
     float Smtc = s1*Tinside + s2*pow(Tinside, 2)/2 + s3*pow(Tinside, 3)/3 + s4*pow(Tinside, 4)/4;   //calculate Seebeck for the module
     float Smth = s1*Toutside + s2*pow(Toutside, 2)/2 + s3*pow(Toutside, 3)/3 + s4*pow(Toutside, 4)/4;
     SM = ((Smth-Smtc)*127/71) / DT;
@@ -153,11 +153,11 @@ inline float calculateResistance(float Tinside, float Toutside)  {
   float RM;
   float DT = Toutside - Tinside;
   
-  if(DT == 0){
+  if(DT == 0){  //calculate the resistance when Tinside = Toutside
     RM = r1 + r2*Tinside + r3*pow(Tinside, 2) + r4*pow(Tinside, 3);
     RM*=762/355;
   }
-  else{
+  else{  //calculate the resistance when Tinside != Toutside
     float Rmtc = r1*Tinside + r2*pow(Tinside, 2)/2 + r3*pow(Tinside, 3)/3 + r4*pow(Tinside, 4)/4;   //calculate Resistance for the module
     float Rmth = r1*Toutside + r2*pow(Toutside, 2)/2 + r3*pow(Toutside, 3)/3 + r4*pow(Toutside, 4)/4;
     RM = (Rmth-Rmtc)*762/355 / DT;
@@ -173,11 +173,11 @@ inline float calculateThermalConductance(float Tinside, float Toutside)  {
   float KM;
   float DT = Toutside - Tinside;
   
-  if(DT == 0){
+  if(DT == 0){  //calculate the thermal conductance when Tinside = Toutside
     KM = k1 + k2*Tinside + k3*pow(Tinside, 2) + k4*pow(Tinside, 3);
     KM*=635/426;
   }
-  else{
+  else{  //calculate the thermal conductance when Tinside != Toutside
     float Kmtc = k1*Tinside + k2*pow(Tinside, 2)/2 + k3*pow(Tinside, 3)/3 + k4*pow(Tinside, 4)/4;   //calculate S for both sides
     float Kmth = k1*Toutside + k2*pow(Toutside, 2)/2 + k3*pow(Toutside, 3)/3 + k4*pow(Toutside, 4)/4;
     KM = (Kmth-Kmtc)*635/426 / DT;
@@ -242,14 +242,16 @@ void onDataReceived(responseData inData) {
   
 ///////////////////////////////////////////////////////////////
   float DT = Toutside - Tinside;
-
-  float SM = calculateSeebeck(Tinside, Toutside);
+ 
+  //calculate the peltier's coefficients
+  float SM = calculateSeebeck(Tinside, Toutside);  
   float RM = calculateResistance(Tinside, Toutside);
   float KM = calculateThermalConductance(Tinside, Toutside);
-  const float Mta = 18.15;
-  float T1 = inData.tempIn;
-  const float Imin = -4;
-  float Iprime = -(SM*Tinside)/RM;
+ 
+  const float Mta = 18.15;  //initialize the thermal mass of air in fridge
+  float T1 = inData.tempIn; //set current ambient temp in fridge
+  const float Imin = -4;  //max current in cooling mode
+  float Iprime = -(SM*Tinside)/RM;  //calculate derivative of appliance current for a given thermal output
   float Iout;
   float Vin;
   float Vgs;
@@ -257,7 +259,7 @@ void onDataReceived(responseData inData) {
   float Vmode = 0;
   float IoutCooling = 0;
 
-  uint32_t clockTime = RTC->MODE2.CLOCK.reg;
+  uint32_t clockTime = RTC->MODE2.CLOCK.reg;  //Find the data cycle time
   tm tme;
   tme.tm_year = 116 + (clockTime >> 26 & 0x1F); // - 1?
   tme.tm_mon = (clockTime >> 22 & 0xF) - 1;
@@ -274,7 +276,7 @@ void onDataReceived(responseData inData) {
   if(T0 == -1)  {
     T0 = T1;  
   }
-  float Hdeli = Mta * (T1 - T0);
+  float Hdeli = Mta * (T1 - T0);  //calculate heat delivered from change in temperature over data cycle
   
 
   if(abs(Hdeli) < abs(inData.powerIn * diff) || (Hdeli > 0 ^ inData.powerIn > 0) && abs(inData.powerIn) > 0.0001) { //output is needed
@@ -297,14 +299,14 @@ void onDataReceived(responseData inData) {
     Iout = 0;
   }
   
-  if(Iout < 0) {
+  if(Iout < 0) {  //if current is negative, set appliance to cool
     Vmode = 0;
     }
-  else if(Iout > 0) {
+  else if(Iout > 0) {  //if current is positive, set appliance to heat
      Vmode = 3.3;
     }
 
-     if(Tinside > 340 && Iout > 0)  {
+     if(Tinside > 340 && Iout > 0)  {  //turn appliance off to prevent thermal switch from disconnecting appliance
         Iout = 0; 
      }
      
