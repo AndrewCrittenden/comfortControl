@@ -8,7 +8,7 @@ Design constrained to a proof of concept with a smaller demonstration module due
 ## To Operate the Comfort Controller
 1) Plug in and turn on the provided Router
 2) Plug in the Raspberry Pi to a separate outlet
-3) Plug in the white extension cord to turn on the Demonstration module and all the sensors, ensure the red switch is flipped on and shining a light. Ensure sensors operation by checking for purple light off each microcontroller.
+3) Plug in the white extension cord to turn on the Demonstration module and all the sensors, ensure the red switch is flipped on and shining a light. Ensure sensors operation by checking for purple light off each microcontroller. Ensure Demonstration module is powered by checking the fan mounted to the back of the fridge. 
 4) Start the code by opening a terminal and running the following commands
     cd ~/WA/comfortControl/gui
     qmake
